@@ -1,13 +1,13 @@
-from tensorflow import keras
+from tensorflow.keras import layers
 
 
-class ConvBlock(keras.layers.Layer):
+class ConvBlock(layers.Layer):
 
     def __init__(self, number_filters: int):
         super(ConvBlock, self).__init__()
-        self.conv = keras.layers.Conv2D(filters=number_filters, kernel_size=(3, 3), padding='same')
-        self.bn = keras.layers.BatchNormalization()
-        self.relu = keras.layers.ReLU()
+        self.conv = layers.Conv2D(filters=number_filters, kernel_size=(3, 3), padding='same')
+        self.bn = layers.BatchNormalization()
+        self.relu = layers.ReLU()
 
     def call(self, inputs, *args, **kwargs):
         x = self.conv(inputs)
@@ -16,13 +16,13 @@ class ConvBlock(keras.layers.Layer):
         return x
 
 
-class EncoderBlock(keras.layers.Layer):
+class EncoderBlock(layers.Layer):
 
     def __init__(self, number_filters: int):
         super(EncoderBlock, self).__init__()
         self.conv_block1 = ConvBlock(number_filters)
         self.conv_block2 = ConvBlock(number_filters)
-        self.mp = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')
+        self.mp = layers.MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')
 
     def call(self, inputs, *args, **kwargs):
         x = self.conv_block1(inputs)
@@ -31,12 +31,12 @@ class EncoderBlock(keras.layers.Layer):
         return z, y
 
 
-class GatedConvNet(keras.layers.Layer):
+class GatedConvNet(layers.Layer):
 
     def __init__(self):
         super(GatedConvNet, self).__init__()
-        self.conc = keras.layers.Concatenate()
-        self.conv = keras.layers.Conv2D(filters=1, kernel_size=(1, 1), activation='sigmoid')
+        self.conc = layers.Concatenate()
+        self.conv = layers.Conv2D(filters=1, kernel_size=(1, 1), activation='sigmoid')
 
     def call(self, inputs, *args, **kwargs):
         x = self.conc([inputs[0], inputs[1]])
@@ -44,14 +44,14 @@ class GatedConvNet(keras.layers.Layer):
         return x
 
 
-class DecoderBlock(keras.layers.Layer):
+class DecoderBlock(layers.Layer):
 
     def __init__(self, number_filters):
         super(DecoderBlock, self).__init__()
-        self.convtrans = keras.layers.Conv2DTranspose(number_filters, kernel_size=(3, 3), strides=(2, 2), padding='same')
+        self.convtrans = layers.Conv2DTranspose(number_filters, kernel_size=(3, 3), strides=(2, 2), padding='same')
         self.gcn = GatedConvNet()
-        self.mult = keras.layers.Multiply()
-        self.add = keras.layers.Add()
+        self.mult = layers.Multiply()
+        self.add = layers.Add()
         self.convblock1 = ConvBlock(number_filters)
         self.convblock2 = ConvBlock(number_filters)
 
