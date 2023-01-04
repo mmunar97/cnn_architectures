@@ -1,14 +1,28 @@
 from models.unet.layers import *
 from tensorflow.keras.optimizers import *
-from typing import Callable, Union
+from typing import Callable, Union, List
 
 import tensorflow.keras.models as keras_model
 import warnings
 
 
 class UNet:
-    def __init__(self, input_size: Union[Tuple[int, int, int], Tuple[int, int]], out_channel: int,
+    def __init__(self,
+                 input_size: Union[Tuple[int, int, int], Tuple[int, int]],
+                 out_channel: int,
                  batch_normalization: bool):
+        """
+        Initializes the model which represents the GSC architecture.
+
+        References:
+            U-Net: Convolutional Networks for Biomedical Image Segmentation. O Ronneberger, P Fisher, T Brox.
+            Medical Image Computing and Computer-Assisted Intervention (MICCAI), Springer, LNCS, Vol.9351: 234--241, 2015
+
+        Args:
+            input_size: A tuple of three elements or two elements, depending on the input images, respectively.
+            out_channel: An integer, representing the number of output channels.
+            batch_normalization: A boolean, representing if batch normalization has to be applied.
+        """
 
         self.__input_size: Tuple[int, int, int] = input_size
         self.__batch_normalization: bool = batch_normalization
@@ -21,19 +35,7 @@ class UNet:
               layer_depth: int = 5, kernel_size: Tuple[int, int] = (3, 3),
               pool_size: Tuple[int, int] = (2, 2)):
         """
-        Builds the graph and model for the U-Net.
-
-        The U-Net, first introduced by Ronnenberger et al., is an encoder-decoder architecture.
-        Build through the stack of 2D convolutional and up sampling 2D.
-
-        Args:
-            n_filters:
-            last_activation:
-            dilation_rate:
-            layer_depth:
-            kernel_size:
-            pool_size:
-
+        Builds the model and constructs the graph.
         """
         # Define input batch shape
         input_image = keras_layer.Input(self.__input_size, name="input_image")
@@ -73,46 +75,38 @@ class UNet:
 
         return input_image, encoder, mask_out
 
-    def compile(self, loss_func: Union[str, Callable] = "categorical_crossentropy",
+    def compile(self,
+                loss_func: Union[str, Callable] = "categorical_crossentropy",
+                metrics: List[Union[str, Callable]] = ["accuracy"],
                 learning_rate: Union[int, float] = 3e-5, *args, **kwargs):
         """
         Compiles the model.
 
-        This function has two behaviors depending on the inclusion of the RPN. In the case of
-        vanilla U-Net this function works as wrapper for the keras.model compile method.
-
         Args:
-            loss_func (str | Callable): Loss function to apply to the main output of the U-Net.
-            learning_rate (Num). Learning rate of the training
-
-        Returns:
-
+            loss_func: An string or callable method, which represent the loss function to be used in the training.
+            metrics: A list of strings or callable methods, which represent the metrics to measure the training performance.
+            learning_rate: An integer or a float number, representing the learning rate of the training.
         """
         loss_functions = {"img_out": loss_func}
 
         self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                                      loss=loss_functions, metrics=['accuracy'])
+                                      loss=loss_functions, metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
               validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
               *args, **kwargs):
-        """ Trains the model with the info passed as parameters.
-
-        The keras model is trained with the information passed as parameters. The info is defined
-        on Config class or instead passed as parameters.
+        """
+        Trains the model with the info passed as parameters.
 
         Args:
-            train_generator:
-            val_generator:
-            epochs:
-            steps_per_epoch:
-            validation_steps:
-            check_point_path:
-            callbacks:
-            verbose:
-
-        Returns:
-
+            train_generator: A generator, representing the feeder for the training process.
+            val_generator: A generator, representing the feeder for the validation process while training.
+            epochs: An integer, representing the number of epochs to use.
+            steps_per_epoch: An integer, representing the number of steps to perform in each epoch.
+            validation_steps: An integer, representing the number of steps in the validation.
+            check_point_path: A string, representing the path where the checkpoints will be saved. Can be None.
+            callbacks: A list of callable methods, representing the callbacks during the training.
+            verbose: An integer, representing if the log has to be shown.
         """
         if self.__history is not None:
             warnings.warn("Model already trained, starting new training")
@@ -152,13 +146,14 @@ class UNet:
         return self.__history
 
     def get_layer(self, *args, **kwargs):
-        """ Wrapper of the Keras get_layer function.
+        """
+        Wrapper of the Keras get_layer function.
         """
         return self.__internal_model.get_layer(*args, **kwargs)
 
     def predict(self, *args, **kwargs):
-        """ Infer the value from the Model, wrapper method of the keras predict.
-
+        """
+        Infer the value from the Model, wrapper method of the keras predict.
         """
         return self.__internal_model.predict(*args, **kwargs)
 
