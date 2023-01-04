@@ -2,12 +2,13 @@ import warnings
 
 from tensorflow.keras.optimizers import *
 
-from models.gsc.layers import EncoderBlock, ConvBlock, DecoderBlock
+from architectures.base.CNNModel import CNNModel
+from architectures.models.gsc.layers import EncoderBlock, ConvBlock, DecoderBlock
 from tensorflow import keras
 from typing import Tuple, List, Union, Callable
 
 
-class GSC:
+class GSC(CNNModel):
 
     def __init__(self,
                  input_size: Tuple[int, int] = (256, 256),
@@ -24,13 +25,13 @@ class GSC:
             filters: A list of integers, representing the sizes of the consecutive filters to be applied. The first element of the list must be one,
                      since it is used for the final output.
         """
+        super().__init__(input_size)
 
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
 
-        self.__input_size: Tuple[int, int, int] = input_size+tuple(1)
+        self.__input_size = self.__input_size+tuple(1)
         self.__filters = filters
-        self.__internal_model = None
         self.__history = None
 
     def build(self):

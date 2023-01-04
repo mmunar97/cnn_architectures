@@ -1,20 +1,20 @@
 from tensorflow.keras.metrics import *
 from tensorflow.keras.optimizers import *
 from typing import Callable, Union, Tuple
-from models.double_unet.layers import *
+
+from architectures.base.CNNModel import CNNModel
+from architectures.models.double_unet.layers import *
 from utils.metrics import *
 
 import tensorflow.keras.models as keras_model
 import warnings
 
 
-class DoubleUNet:
+class DoubleUNet(CNNModel):
 
     def __init__(self, input_size: Tuple[int, int, int]):
+        super().__init__(input_size)
 
-        self.__input_size: Tuple[int, int, int] = input_size
-
-        self.__internal_model = None
         self.__history = None
 
     def build(self):

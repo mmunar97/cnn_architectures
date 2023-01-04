@@ -1,5 +1,4 @@
-from models.double_unet.double_unet import DoubleUNet
-from models.gsc.gsc import GSC
+from architectures.models.gsc.gsc import GSC
 
 if __name__ == '__main__':
 
