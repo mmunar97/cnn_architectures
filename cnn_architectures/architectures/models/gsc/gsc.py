@@ -2,8 +2,8 @@ import warnings
 
 from tensorflow.keras.optimizers import *
 
-from architectures.base.CNNModel import CNNModel
-from architectures.models.gsc.layers import EncoderBlock, ConvBlock, DecoderBlock
+from cnn_architectures.architectures.base.CNNModel import CNNModel
+from cnn_architectures.architectures.models.gsc.layers import EncoderBlock, ConvBlock, DecoderBlock
 from tensorflow import keras
 from typing import Tuple, List, Union, Callable
 

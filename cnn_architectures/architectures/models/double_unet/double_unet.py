@@ -2,9 +2,9 @@ from tensorflow.keras.metrics import *
 from tensorflow.keras.optimizers import *
 from typing import Callable, Union, Tuple
 
-from architectures.base.CNNModel import CNNModel
-from architectures.models.double_unet.layers import *
-from utils.metrics import *
+from cnn_architectures.architectures.base.CNNModel import CNNModel
+from cnn_architectures.architectures.models.double_unet.layers import *
+from cnn_architectures.utils.metrics import *
 
 import tensorflow.keras.models as keras_model
 import warnings
