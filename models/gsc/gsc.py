@@ -10,20 +10,33 @@ from typing import Tuple, List, Union, Callable
 class GSC:
 
     def __init__(self,
-                 input_size: Tuple[int, int, int] = (256, 256, 1),
-                 filters=None):
+                 input_size: Tuple[int, int] = (256, 256),
+                 filters: List[int] = None):
+        """
+        Initializes the model which represents the GSC architecture.
 
-        super(GSC, self).__init__()
+        References:
+            Promising crack segmentation method based on gated skip connection. M Jabreel and M Abdel-Nasser.
+            Electronic Letters, Volume 56, Issue 10, 2020.
+
+        Args:
+            input_size: A tuple of two elements, representing the size of the input images. The GSC architecture only allows to handle grey-scale images.
+            filters: A list of integers, representing the sizes of the consecutive filters to be applied. The first element of the list must be one,
+                     since it is used for the final output.
+        """
 
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
 
-        self.__input_size: Tuple[int, int, int] = input_size
+        self.__input_size: Tuple[int, int, int] = input_size+tuple(1)
         self.__filters = filters
         self.__internal_model = None
         self.__history = None
 
     def build(self):
+        """
+        Builds the model and constructs the graph.
+        """
         input_image = keras.layers.Input(self.__input_size, name="input_image")
 
         y_history = []
@@ -53,27 +66,32 @@ class GSC:
                 loss_func: List[Union[str, Callable]] = ["categorical_crossentropy"],
                 metrics: List[Union[str, Callable]] = ["binary_accuracy"],
                 learning_rate: Union[int, float] = 3e-5, *args, **kwargs):
+        """
+        Compiles the model.
+
+        Args:
+            loss_func: A list of strings or callable methods, which represent the loss function to be used in the training.
+            metrics: A list of strings or callable methods, which represent the metrics to measure the training performance.
+            learning_rate: An integer or a float number, representing the learning rate of the training.
+        """
         self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
                                       loss=loss_func, metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
-              validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
+              validation_steps: int, check_point_path: Union[str, None], callbacks: List[Callable] = None, verbose: int = 1,
               *args, **kwargs):
         """
         Trains the model with the info passed as parameters.
 
         Args:
-            train_generator:
-            val_generator:
-            epochs:
-            steps_per_epoch:
-            validation_steps:
-            check_point_path:
-            callbacks:
-            verbose:
-
-        Returns:
-
+            train_generator: A generator, representing the feeder for the training process.
+            val_generator: A generator, representing the feeder for the validation process while training.
+            epochs: An integer, representing the number of epochs to use.
+            steps_per_epoch: An integer, representing the number of steps to perform in each epoch.
+            validation_steps: An integer, representing the number of steps in the validation.
+            check_point_path: A string, representing the path where the checkpoints will be saved. Can be None.
+            callbacks: A list of callable methods, representing the callbacks during the training.
+            verbose: An integer, representing if the log has to be shown.
         """
         if self.__history is not None:
             warnings.warn("Model already trained, starting new training")
@@ -102,6 +120,9 @@ class GSC:
         self.__history = history
 
     def load_weight(self, path: str):
+        """
+        Loads the already-trained weights from a path.
+        """
         self.__internal_model.load_weights(path)
 
     @property
