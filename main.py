@@ -1,7 +1,19 @@
 from models.double_unet.double_unet import DoubleUNet
+from models.gsc.gsc import GSC
 
 if __name__ == '__main__':
 
-    model1 = DoubleUNet(input_size=(256, 256, 3))
-    model1.build()
-    model1.compile()
+    """
+    model = DoubleUNet(input_size=(256, 256, 3))
+    model.build()
+    model.compile()
+    """
+
+    """
+    """
+    model = GSC(input_size=(256, 256, 1),
+                filters=[1, 32, 64, 128, 256, 512, 1024])
+    model.build()
+    model.compile()
+
+    print(model.model.summary())

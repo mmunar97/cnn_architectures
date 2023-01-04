@@ -17,7 +17,7 @@ class UNet:
         self.__internal_model = None
         self.__history = None
 
-    def build(self, n_filters, last_activation: Union[Callable, str], dilation_rate: int = 1,
+    def build(self, n_filters: int, last_activation: Union[Callable, str], dilation_rate: int = 1,
               layer_depth: int = 5, kernel_size: Tuple[int, int] = (3, 3),
               pool_size: Tuple[int, int] = (2, 2)):
         """
@@ -75,7 +75,8 @@ class UNet:
 
     def compile(self, loss_func: Union[str, Callable] = "categorical_crossentropy",
                 learning_rate: Union[int, float] = 3e-5, *args, **kwargs):
-        """ Compiles the model.
+        """
+        Compiles the model.
 
         This function has two behaviors depending on the inclusion of the RPN. In the case of
         vanilla U-Net this function works as wrapper for the keras.model compile method.

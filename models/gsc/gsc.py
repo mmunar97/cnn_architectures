@@ -1,0 +1,113 @@
+import warnings
+
+from tensorflow.keras.optimizers import *
+
+from models.gsc.layers import EncoderBlock, ConvBlock, DecoderBlock
+from tensorflow import keras
+from typing import Tuple, List, Union, Callable
+
+
+class GSC:
+
+    def __init__(self,
+                 input_size: Tuple[int, int, int] = (256, 256, 1),
+                 filters=None):
+
+        super(GSC, self).__init__()
+
+        if filters is None:
+            filters = [1, 32, 64, 128, 256, 512, 1024]
+
+        self.__input_size: Tuple[int, int, int] = input_size
+        self.__filters = filters
+        self.__internal_model = None
+        self.__history = None
+
+    def build(self):
+        input_image = keras.layers.Input(self.__input_size, name="input_image")
+
+        y_history = []
+        x = input_image
+
+        for filter_size in self.__filters[1:len(self.__filters) - 1]:
+            encoder = EncoderBlock(number_filters=filter_size)
+            x, y_encoder = encoder(x)
+            y_history.append(y_encoder)
+
+        conv_block = ConvBlock(self.__filters[len(self.__filters) - 1])
+        x = conv_block(x)
+        y_history.reverse()
+
+        for index, filter_size in enumerate(reversed(self.__filters[1:len(self.__filters) - 1])):
+            decoder = DecoderBlock(number_filters=filter_size)
+            x = decoder([x, y_history[index]])
+
+        mask_out = keras.layers.Conv2D(filters=self.__filters[0], kernel_size=(1, 1), activation='sigmoid')(x)
+
+        model = keras.models.Model(inputs=input_image, outputs=mask_out)
+        self.__internal_model = model
+
+        return input_image, mask_out
+
+    def compile(self,
+                loss_func: List[Union[str, Callable]] = ["categorical_crossentropy"],
+                metrics: List[Union[str, Callable]] = ["binary_accuracy"],
+                learning_rate: Union[int, float] = 3e-5, *args, **kwargs):
+        self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
+                                      loss=loss_func, metrics=metrics)
+
+    def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
+              validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
+              *args, **kwargs):
+        """
+        Trains the model with the info passed as parameters.
+
+        Args:
+            train_generator:
+            val_generator:
+            epochs:
+            steps_per_epoch:
+            validation_steps:
+            check_point_path:
+            callbacks:
+            verbose:
+
+        Returns:
+
+        """
+        if self.__history is not None:
+            warnings.warn("Model already trained, starting new training")
+
+        if callbacks is None:
+            callbacks = []
+
+        if check_point_path is not None:
+            callbacks.append(keras.callbacks.ModelCheckpoint(check_point_path, verbose=0,
+                                                             save_weights_only=False,
+                                                             save_best_only=True))
+
+        if val_generator is not None:
+            history = self.__internal_model.fit(train_generator, validation_data=val_generator,
+                                                epochs=epochs,
+                                                validation_steps=validation_steps,
+                                                callbacks=callbacks,
+                                                steps_per_epoch=steps_per_epoch,
+                                                verbose=verbose, *args, **kwargs)
+        else:
+            history = self.__internal_model.fit(train_generator, epochs=epochs,
+                                                callbacks=callbacks, verbose=verbose,
+                                                steps_per_epoch=steps_per_epoch, *args,
+                                                **kwargs)
+
+        self.__history = history
+
+    def load_weight(self, path: str):
+        self.__internal_model.load_weights(path)
+
+    @property
+    def model(self):
+        return self.__internal_model
+
+    @property
+    def history(self):
+        return self.__history
