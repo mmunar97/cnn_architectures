@@ -1,2 +1,4 @@
 tensorflow==2.3.0
 numpy
+scikit-image
+opencv-python
