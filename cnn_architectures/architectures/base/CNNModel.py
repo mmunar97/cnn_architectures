@@ -10,7 +10,7 @@ class CNNModel:
 
     def __init__(self,
                  input_size: Tuple[int, ...]):
-        self.__input_size: Tuple[int, ...] = None
+        self.__input_size: Tuple[int, ...] = input_size
         self.__internal_model: keras.models.Model = None
 
     def predict_binary(self, image: numpy.ndarray, binary_threshold: float) -> Tuple[numpy.ndarray, numpy.ndarray]:
