@@ -22,6 +22,7 @@ class ConvBlock(layers.Layer):
         config.update({
             'number_filters': self.number_filters
         })
+        return config
 
 
 class EncoderBlock(layers.Layer):
@@ -45,6 +46,7 @@ class EncoderBlock(layers.Layer):
         config.update({
             'number_filters': self.number_filters
         })
+        return config
 
 
 class GatedConvNet(layers.Layer):
@@ -87,3 +89,4 @@ class DecoderBlock(layers.Layer):
         config.update({
             'number_filters': self.number_filters
         })
+        return config
