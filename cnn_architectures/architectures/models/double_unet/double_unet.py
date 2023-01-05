@@ -18,7 +18,7 @@ class DoubleUNet(CNNModel):
         self.__history = None
 
     def build(self):
-        input_image = keras_layer.Input(self.__input_size, name="input_image")
+        input_image = keras_layer.Input(self.input_size, name="input_image")
 
         encoder1 = VGGEncoder(input_layer=input_image)
         x, skip1 = encoder1.build_layer()
@@ -46,7 +46,7 @@ class DoubleUNet(CNNModel):
         final_output = Concatenate()([output1_layer, output2.build_layer()])
 
         model = keras_model.Model(inputs=input_image, outputs=final_output)
-        self.__internal_model = model
+        self.set_model(model)
 
     def compile(self,
                 metrics: List[Callable] = None,
@@ -60,8 +60,8 @@ class DoubleUNet(CNNModel):
         if metrics is None:
             metrics = [dice_coef, iou, Recall(), Precision()]
 
-        self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                                      metrics=metrics)
+        self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
+                           metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
               validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
@@ -94,26 +94,22 @@ class DoubleUNet(CNNModel):
                                                                 save_best_only=True))
 
         if val_generator is not None:
-            history = self.__internal_model.fit(train_generator, validation_data=val_generator,
-                                                epochs=epochs,
-                                                validation_steps=validation_steps,
-                                                callbacks=callbacks,
-                                                steps_per_epoch=steps_per_epoch,
-                                                verbose=verbose, *args, **kwargs)
+            history = self.model.fit(train_generator, validation_data=val_generator,
+                                     epochs=epochs,
+                                     validation_steps=validation_steps,
+                                     callbacks=callbacks,
+                                     steps_per_epoch=steps_per_epoch,
+                                     verbose=verbose, *args, **kwargs)
         else:
-            history = self.__internal_model.fit(train_generator, epochs=epochs,
-                                                callbacks=callbacks, verbose=verbose,
-                                                steps_per_epoch=steps_per_epoch, *args,
-                                                **kwargs)
+            history = self.model.fit(train_generator, epochs=epochs,
+                                     callbacks=callbacks, verbose=verbose,
+                                     steps_per_epoch=steps_per_epoch, *args,
+                                     **kwargs)
 
         self.__history = history
 
     def load_weight(self, path: str):
-        self.__internal_model.load_weights(path)
-
-    @property
-    def model(self):
-        return self.__internal_model
+        self.model.load_weights(path)
 
     @property
     def history(self):

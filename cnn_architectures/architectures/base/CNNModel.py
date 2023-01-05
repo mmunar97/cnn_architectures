@@ -42,7 +42,7 @@ class CNNModel:
 
         resized_image = cv2.resize(image, (self.__input_size[0], self.__input_size[1]))
 
-        prediction = self.__internal_model.model.predict(numpy.array([resized_image_normalized]))
+        prediction = self.model.predict(numpy.array([resized_image_normalized]))
         prediction_mask = prediction[0] >= binary_threshold
         prediction_mask_int = 255 * prediction_mask
 
