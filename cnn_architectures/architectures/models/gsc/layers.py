@@ -5,7 +5,9 @@ class ConvBlock(layers.Layer):
 
     def __init__(self, number_filters: int):
         super(ConvBlock, self).__init__()
-        self.conv = layers.Conv2D(filters=number_filters, kernel_size=(3, 3), padding='same')
+        self.number_filters = number_filters
+
+        self.conv = layers.Conv2D(filters=self.number_filters, kernel_size=(3, 3), padding='same')
         self.bn = layers.BatchNormalization()
         self.relu = layers.ReLU()
 
@@ -15,13 +17,21 @@ class ConvBlock(layers.Layer):
         x = self.relu(x)
         return x
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'number_filters': self.number_filters
+        })
+
 
 class EncoderBlock(layers.Layer):
 
     def __init__(self, number_filters: int):
         super(EncoderBlock, self).__init__()
-        self.conv_block1 = ConvBlock(number_filters)
-        self.conv_block2 = ConvBlock(number_filters)
+        self.number_filters = number_filters
+
+        self.conv_block1 = ConvBlock(self.number_filters)
+        self.conv_block2 = ConvBlock(self.number_filters)
         self.mp = layers.MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')
 
     def call(self, inputs, *args, **kwargs):
@@ -29,6 +39,12 @@ class EncoderBlock(layers.Layer):
         y = self.conv_block2(x)
         z = self.mp(y)
         return z, y
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'number_filters': self.number_filters
+        })
 
 
 class GatedConvNet(layers.Layer):
@@ -48,12 +64,14 @@ class DecoderBlock(layers.Layer):
 
     def __init__(self, number_filters):
         super(DecoderBlock, self).__init__()
-        self.convtrans = layers.Conv2DTranspose(number_filters, kernel_size=(3, 3), strides=(2, 2), padding='same')
+
+        self.number_filters = number_filters
+        self.convtrans = layers.Conv2DTranspose(self.number_filters, kernel_size=(3, 3), strides=(2, 2), padding='same')
         self.gcn = GatedConvNet()
         self.mult = layers.Multiply()
         self.add = layers.Add()
-        self.convblock1 = ConvBlock(number_filters)
-        self.convblock2 = ConvBlock(number_filters)
+        self.convblock1 = ConvBlock(self.number_filters)
+        self.convblock2 = ConvBlock(self.number_filters)
 
     def call(self, inputs, *args, **kwargs):
         x = self.convtrans(inputs[0])
@@ -63,3 +81,9 @@ class DecoderBlock(layers.Layer):
         x = self.convblock1(x)
         x = self.convblock2(x)
         return x
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'number_filters': self.number_filters
+        })
