@@ -62,7 +62,7 @@ class GatedConvNet(layers.Layer):
 
 class DecoderBlock(layers.Layer):
 
-    def __init__(self, number_filters):
+    def __init__(self, number_filters: int):
         super(DecoderBlock, self).__init__()
 
         self.number_filters = number_filters

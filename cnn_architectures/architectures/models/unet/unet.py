@@ -24,7 +24,7 @@ class UNet(CNNModel):
             out_channel: An integer, representing the number of output channels.
             batch_normalization: A boolean, representing if batch normalization has to be applied.
         """
-        super().__init__(input_size)
+        super(UNet, self).__init__(input_size)
 
         self.__batch_normalization: bool = batch_normalization
         self.__n_channels: int = out_channel
