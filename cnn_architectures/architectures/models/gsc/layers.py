@@ -12,7 +12,6 @@ class ConvBlock(layers.Layer):
         self.relu = layers.ReLU()
 
     def call(self, inputs, *args, **kwargs):
-        self.add_weight("ConvBlock")
         x = self.conv(inputs)
         x = self.bn(x)
         x = self.relu(x)
@@ -36,7 +35,6 @@ class EncoderBlock(layers.Layer):
         self.mp = layers.MaxPooling2D(pool_size=(2, 2), strides=2, padding='same')
 
     def call(self, inputs, *args, **kwargs):
-        self.add_weight("EncoderBlock")
         x = self.conv_block1(inputs)
         y = self.conv_block2(x)
         z = self.mp(y)
@@ -57,7 +55,6 @@ class GatedConvNet(layers.Layer):
         self.conv = layers.Conv2D(filters=1, kernel_size=(1, 1), activation='sigmoid')
 
     def call(self, inputs, *args, **kwargs):
-        self.add_weight("GatedConvNet")
         x = self.conc([inputs[0], inputs[1]])
         x = self.conv(x)
         return x
@@ -77,7 +74,6 @@ class DecoderBlock(layers.Layer):
         self.convblock2 = ConvBlock(self.number_filters)
 
     def call(self, inputs, *args, **kwargs):
-        self.add_weight("DecoderBlock")
         x = self.convtrans(inputs[0])
         y = self.gcn([inputs[1], x])
         z = self.mult([inputs[1], y])
