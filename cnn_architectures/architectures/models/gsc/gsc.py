@@ -25,7 +25,7 @@ class GSC(CNNModel):
             filters: A list of integers, representing the sizes of the consecutive filters to be applied. The first element of the list must be one,
                      since it is used for the final output.
         """
-        super().__init__(input_size)
+        super(GSC, self).__init__(input_size)
 
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
