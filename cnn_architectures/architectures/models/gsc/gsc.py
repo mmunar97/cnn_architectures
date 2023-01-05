@@ -1,8 +1,5 @@
 import warnings
 
-import cv2
-import numpy
-import skimage
 from tensorflow.keras.optimizers import *
 
 from cnn_architectures.architectures.base.CNNModel import CNNModel
@@ -11,7 +8,7 @@ from tensorflow import keras
 from typing import Tuple, List, Union, Callable
 
 
-class GSC:
+class GSC(CNNModel):
 
     def __init__(self,
                  input_size: Tuple[int, int] = (256, 256),
@@ -28,12 +25,11 @@ class GSC:
             filters: A list of integers, representing the sizes of the consecutive filters to be applied. The first element of the list must be one,
                      since it is used for the final output.
         """
-        #super(GSC, self).__init__(input_size)
+        super().__init__(input_size + (1,))
 
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
 
-        self.__input_size = input_size+(1,)
         self.__filters = filters
         self.__history = None
 
@@ -41,7 +37,7 @@ class GSC:
         """
         Builds the model and constructs the graph.
         """
-        input_image = keras.layers.Input(self.__input_size, name="input_image")
+        input_image = keras.layers.Input(self.input_size, name="input_image")
 
         y_history = []
         x = input_image
@@ -62,7 +58,7 @@ class GSC:
         mask_out = keras.layers.Conv2D(filters=self.__filters[0], kernel_size=(1, 1), activation='sigmoid')(x)
 
         model = keras.models.Model(inputs=input_image, outputs=mask_out)
-        self.__internal_model = model
+        self.set_model(model)
 
         return input_image, mask_out
 
@@ -78,8 +74,8 @@ class GSC:
             metrics: A list of strings or callable methods, which represent the metrics to measure the training performance.
             learning_rate: An integer or a float number, representing the learning rate of the training.
         """
-        self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                                      loss=loss_func, metrics=metrics)
+        self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
+                           loss=loss_func, metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
               validation_steps: int, check_point_path: Union[str, None], callbacks: List[Callable] = None, verbose: int = 1,
@@ -109,17 +105,17 @@ class GSC:
                                                              save_best_only=True))
 
         if val_generator is not None:
-            history = self.__internal_model.fit(train_generator, validation_data=val_generator,
-                                                epochs=epochs,
-                                                validation_steps=validation_steps,
-                                                callbacks=callbacks,
-                                                steps_per_epoch=steps_per_epoch,
-                                                verbose=verbose, *args, **kwargs)
+            history = self.model.fit(train_generator, validation_data=val_generator,
+                                     epochs=epochs,
+                                     validation_steps=validation_steps,
+                                     callbacks=callbacks,
+                                     steps_per_epoch=steps_per_epoch,
+                                     verbose=verbose, *args, **kwargs)
         else:
-            history = self.__internal_model.fit(train_generator, epochs=epochs,
-                                                callbacks=callbacks, verbose=verbose,
-                                                steps_per_epoch=steps_per_epoch, *args,
-                                                **kwargs)
+            history = self.model.fit(train_generator, epochs=epochs,
+                                     callbacks=callbacks, verbose=verbose,
+                                     steps_per_epoch=steps_per_epoch, *args,
+                                     **kwargs)
 
         self.__history = history
 
@@ -127,45 +123,8 @@ class GSC:
         """
         Loads the already-trained weights from a path.
         """
-        self.__internal_model.load_weights(path)
-
-    @property
-    def model(self):
-        return self.__internal_model
+        self.model.load_weights(path)
 
     @property
     def history(self):
         return self.__history
-
-    def predict_binary(self, image: numpy.ndarray, binary_threshold: float) -> Tuple[numpy.ndarray, numpy.ndarray]:
-        """
-        Performs the prediction of the already-trained model as a binary mask.
-
-        Args:
-            image: An image represented as a numpy array.
-            binary_threshold: A float, representing the number to be used in the binarization.
-
-        Returns:
-            Two numpy arrays: the first one, representing the binary mask, and the second one, representing the original image with the binary mask drawn over it.
-        """
-        if image.ndim == 2:
-            resized_image_normalized = skimage.transform.resize(image, (self.__input_size[0], self.__input_size[1]))
-        else:
-            resized_image_normalized = skimage.transform.resize(image, (self.__input_size[0], self.__input_size[1], image.shape[2]))
-
-        resized_image = cv2.resize(image, (self.__input_size[0], self.__input_size[1]))
-
-        prediction = self.__internal_model.model.predict(numpy.array([resized_image_normalized]))
-        prediction_mask = prediction[0] >= binary_threshold
-        prediction_mask_int = 255 * prediction_mask
-
-        for x in range(0, prediction_mask.shape[0]):
-            for y in range(0, prediction_mask.shape[1]):
-                if prediction_mask[x][y]:
-                    resized_image[x, y, 0] = 0
-                    resized_image[x, y, 1] = 255
-                    resized_image[x, y, 2] = 0
-
-        resized_image = cv2.resize(resized_image, (image.shape[1], image.shape[0]))
-
-        return prediction_mask_int, resized_image

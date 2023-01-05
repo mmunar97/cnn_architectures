@@ -24,7 +24,7 @@ class UNet(CNNModel):
             out_channel: An integer, representing the number of output channels.
             batch_normalization: A boolean, representing if batch normalization has to be applied.
         """
-        super(UNet, self).__init__(input_size)
+        super().__init__(input_size)
 
         self.__batch_normalization: bool = batch_normalization
         self.__n_channels: int = out_channel
@@ -38,7 +38,7 @@ class UNet(CNNModel):
         Builds the model and constructs the graph.
         """
         # Define input batch shape
-        input_image = keras_layer.Input(self.__input_size, name="input_image")
+        input_image = keras_layer.Input(self.input_size, name="input_image")
         encoder = {}
 
         conv_params = dict(filters=n_filters,
@@ -71,7 +71,7 @@ class UNet(CNNModel):
 
         model = keras_model.Model(inputs=input_image, outputs=mask_out)
 
-        self.__internal_model = model
+        self.set_model(model)
 
         return input_image, encoder, mask_out
 
@@ -89,8 +89,8 @@ class UNet(CNNModel):
         """
         loss_functions = {"img_out": loss_func}
 
-        self.__internal_model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                                      loss=loss_functions, metrics=metrics)
+        self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
+                           loss=loss_functions, metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
               validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
@@ -120,42 +120,32 @@ class UNet(CNNModel):
                                                                 save_best_only=True))
 
         if val_generator is not None:
-            history = self.__internal_model.fit(train_generator, validation_data=val_generator,
-                                                epochs=epochs,
-                                                validation_steps=validation_steps,
-                                                callbacks=callbacks,
-                                                steps_per_epoch=steps_per_epoch,
-                                                verbose=verbose, *args, **kwargs)
+            history = self.model.fit(train_generator, validation_data=val_generator,
+                                     epochs=epochs,
+                                     validation_steps=validation_steps,
+                                     callbacks=callbacks,
+                                     steps_per_epoch=steps_per_epoch,
+                                     verbose=verbose, *args, **kwargs)
         else:
-            history = self.__internal_model.fit(train_generator, epochs=epochs,
-                                                callbacks=callbacks, verbose=verbose,
-                                                steps_per_epoch=steps_per_epoch, *args,
-                                                **kwargs)
+            history = self.model.fit(train_generator, epochs=epochs,
+                                     callbacks=callbacks, verbose=verbose,
+                                     steps_per_epoch=steps_per_epoch, *args,
+                                     **kwargs)
 
         self.__history = history
 
     def load_weight(self, path: str):
-        self.__internal_model.load_weights(path)
-
-    @property
-    def model(self):
-        return self.__internal_model
+        self.model.load_weights(path)
 
     @property
     def history(self):
-        return self.__history
+        return self.model
 
     def get_layer(self, *args, **kwargs):
         """
         Wrapper of the Keras get_layer function.
         """
-        return self.__internal_model.get_layer(*args, **kwargs)
-
-    def predict(self, *args, **kwargs):
-        """
-        Infer the value from the Model, wrapper method of the keras predict.
-        """
-        return self.__internal_model.predict(*args, **kwargs)
+        return self.model.get_layer(*args, **kwargs)
 
     def summary(self):
-        self.__internal_model.summary()
+        self.model.summary()
