@@ -30,7 +30,7 @@ class GSC(CNNModel):
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
 
-        self.__input_size = self.__input_size+tuple(1)
+        self.__input_size = input_size+tuple(1)
         self.__filters = filters
         self.__history = None
 
