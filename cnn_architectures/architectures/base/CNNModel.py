@@ -24,7 +24,7 @@ class CNNModel:
     def set_model(self, model: keras.models.Model):
         self.__internal_model = model
 
-    def predict_binary(self, image: numpy.ndarray, binary_threshold: float) -> Tuple[numpy.ndarray, numpy.ndarray]:
+    def predict_binary(self, image: numpy.ndarray, binary_threshold: float) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
         """
         Performs the prediction of the already-trained model as a binary mask.
 
@@ -43,16 +43,22 @@ class CNNModel:
         resized_image = cv2.resize(image, (self.__input_size[0], self.__input_size[1]))
 
         prediction = self.model.predict(numpy.array([resized_image_normalized]))
-        prediction_mask = prediction[0] >= binary_threshold
-        prediction_mask_int = 255 * prediction_mask
+        prediction_mask_bool = prediction[0] >= binary_threshold
+        prediction_mask_int = 255 * prediction_mask_bool
 
-        for x in range(0, prediction_mask.shape[0]):
-            for y in range(0, prediction_mask.shape[1]):
-                if prediction_mask[x][y]:
-                    resized_image[x, y, 0] = 0
-                    resized_image[x, y, 1] = 255
-                    resized_image[x, y, 2] = 0
+        if image.ndim == 2:
+            for x in range(0, prediction_mask_bool.shape[0]):
+                for y in range(0, prediction_mask_bool.shape[1]):
+                    if prediction_mask_bool[x][y]:
+                        resized_image[x, y] = 255
+        else:
+            for x in range(0, prediction_mask_bool.shape[0]):
+                for y in range(0, prediction_mask_bool.shape[1]):
+                    if prediction_mask_bool[x][y]:
+                        resized_image[x, y, 0] = 0
+                        resized_image[x, y, 1] = 255
+                        resized_image[x, y, 2] = 0
 
         resized_image = cv2.resize(resized_image, (image.shape[1], image.shape[0]))
 
-        return prediction_mask_int, resized_image
+        return prediction_mask_bool, prediction_mask_int, resized_image
