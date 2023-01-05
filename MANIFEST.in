@@ -1,1 +1,1 @@
-recursive-include cnn *
+recursive-include cnn_architectures *
