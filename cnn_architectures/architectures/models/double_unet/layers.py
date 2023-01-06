@@ -5,15 +5,14 @@ from tensorflow.keras.layers import *
 from typing import List
 
 
-class VGGEncoder:
+class VGGEncoder(Layer):
+    def __init__(self):
+        super(VGGEncoder, self).__init__()
 
-    def __init__(self, input_layer: keras_layer.Input):
-        self.__input = input_layer
-
-    def build_layer(self):
+    def call(self, inputs, *args, **kwargs):
         skip_connections = []
 
-        model = VGG19(include_top=False, weights='imagenet', input_tensor=self.__input)
+        model = VGG19(include_top=False, weights='imagenet', input_tensor=inputs)
         names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
         for name in names:
             skip_connections.append(model.get_layer(name).output)
@@ -22,15 +21,16 @@ class VGGEncoder:
         return output, skip_connections
 
 
-class AtrousSpatialPyramidPooling:
+class AtrousSpatialPyramidPooling(Layer):
 
-    def __init__(self, input_layer: keras_layer.Layer, n_filters: int):
-        self.__input = input_layer
+    def __init__(self, n_filters: int):
+        super(AtrousSpatialPyramidPooling, self).__init__()
+
         self.__n_filter = n_filters
 
-    def build_layer(self):
-        shape = self.__input.shape
-        x = self.__input
+    def call(self, inputs, *args, **kwargs):
+        shape = inputs.shape
+        x = inputs
 
         y1 = AveragePooling2D(pool_size=(shape[1], shape[2]))(x)
         y1 = Conv2D(self.__n_filter, 1, padding="same")(y1)
@@ -62,43 +62,56 @@ class AtrousSpatialPyramidPooling:
 
         return y
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'n_filters': self.__n_filter
+        })
+        return config
 
-class ForwardConnectedDecoder:
 
-    def __init__(self, input_layer: keras_layer.Layer, connections: List[keras_layer.Layer]):
-        self.__input = input_layer
+class ForwardConnectedDecoder(Layer):
+
+    def __init__(self, connections: List[keras_layer.Layer]):
+        super(ForwardConnectedDecoder, self).__init__()
+
         self.__connections = connections
 
-    def build_layer(self):
+    def call(self, inputs, **kwargs):
         num_filters = [256, 128, 64, 32]
 
         skip_connections = self.__connections.copy()
         skip_connections.reverse()
-        x = self.__input
+        x = inputs
 
         for i, f in enumerate(num_filters):
             x = UpSampling2D((2, 2), interpolation='bilinear')(x)
             x = Concatenate()([x, skip_connections[i]])
 
-            convolutional_block = ConvolutionalBlock(input_layer=x, n_filters=f)
-            x = convolutional_block.build_layer()
+            x = ConvolutionalBlock(n_filters=f)(x)
 
         return x
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'connections': self.__connections
+        })
+        return config
 
-class ForwardEncoder:
 
-    def __init__(self, input_layer: keras_layer.Layer):
-        self.__input = input_layer
+class ForwardEncoder(Layer):
 
-    def build_layer(self):
+    def __init__(self):
+        super(ForwardEncoder, self).__init__()
+
+    def call(self, inputs, **kwargs):
         num_filters = [32, 64, 128, 256]
         skip_connections = []
-        x = self.__input
+        x = inputs
 
         for i, f in enumerate(num_filters):
-            convolutional_block = ConvolutionalBlock(input_layer=x, n_filters=f)
-            x = convolutional_block.build_layer()
+            x = ConvolutionalBlock(n_filters=f)(x)
 
             skip_connections.append(x)
             x = MaxPool2D((2, 2))(x)
@@ -106,14 +119,15 @@ class ForwardEncoder:
         return x, skip_connections
 
 
-class ForwardDoubleConnectedDecoder:
+class ForwardDoubleConnectedDecoder(Layer):
 
-    def __init__(self, input_layer: keras_layer.Layer, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer]):
-        self.__input = input_layer
+    def __init__(self, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer]):
+        super(ForwardDoubleConnectedDecoder, self).__init__()
+
         self.__connections1 = connections1
         self.__connections2 = connections2
 
-    def build_layer(self):
+    def call(self, inputs, **kwargs):
         num_filters = [256, 128, 64, 32]
 
         skip_connections1 = self.__connections1.copy()
@@ -122,26 +136,34 @@ class ForwardDoubleConnectedDecoder:
         skip_connections2 = self.__connections2.copy()
         skip_connections2.reverse()
 
-        x = self.__input
+        x = inputs
 
         for i, f in enumerate(num_filters):
             x = UpSampling2D((2, 2), interpolation='bilinear')(x)
             x = Concatenate()([x, skip_connections1[i], skip_connections2[i]])
 
-            convolutional_block = ConvolutionalBlock(input_layer=x, n_filters=f)
-            x = convolutional_block.build_layer()
+            x = ConvolutionalBlock(n_filters=f)(x)
 
         return x
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'connections1': self.__connections1,
+            'connections2': self.__connections2
+        })
+        return config
 
-class ConvolutionalBlock:
 
-    def __init__(self, input_layer: keras_layer.Layer, n_filters: int):
-        self.__input = input_layer
+class ConvolutionalBlock(Layer):
+
+    def __init__(self, n_filters: int):
+        super(ConvolutionalBlock, self).__init__()
+
         self.__n_filter = n_filters
 
-    def build_layer(self):
-        x = self.__input
+    def call(self, inputs, **kwargs):
+        x = inputs
 
         x = Conv2D(self.__n_filter, (3, 3), padding="same")(x)
         x = BatchNormalization()(x)
@@ -170,13 +192,20 @@ class ConvolutionalBlock:
         x = Multiply()([init, se])
         return x
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'n_filters': self.__n_filter
+        })
+        return config
 
-class OutputBlock:
 
-    def __init__(self, input_layer: keras_layer.Layer):
-        self.__input = input_layer
+class OutputBlock(Layer):
 
-    def build_layer(self):
-        x = Conv2D(1, (1, 1), padding="same")(self.__input)
+    def __init__(self):
+        super(OutputBlock, self).__init__()
+
+    def call(self, inputs, **kwargs):
+        x = Conv2D(1, (1, 1), padding="same")(inputs)
         x = Activation('sigmoid')(x)
         return x

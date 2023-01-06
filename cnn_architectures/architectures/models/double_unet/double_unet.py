@@ -20,30 +20,19 @@ class DoubleUNet(CNNModel):
     def build(self):
         input_image = keras_layer.Input(self.input_size, name="input_image")
 
-        encoder1 = VGGEncoder(input_layer=input_image)
-        x, skip1 = encoder1.build_layer()
+        x, skip1 = VGGEncoder()(input_image)
+        x = AtrousSpatialPyramidPooling(n_filters=64)(x)
+        x = ForwardConnectedDecoder(connections=skip1)(x)
 
-        asap1 = AtrousSpatialPyramidPooling(input_layer=x, n_filters=64)
-        x = asap1.build_layer()
+        output1 = OutputBlock()(x)
+        x = input_image * output1
 
-        decoder1 = ForwardConnectedDecoder(input_layer=x, connections=skip1)
-        x = decoder1.build_layer()
+        x, skip2 = ForwardEncoder()(x)
+        x = AtrousSpatialPyramidPooling(n_filters=64)(x)
+        x = ForwardDoubleConnectedDecoder(input_layer=x, connections1=skip1, connections2=skip2)(x)
 
-        output1 = OutputBlock(input_layer=x)
-        output1_layer = output1.build_layer()
-        x = input_image * output1_layer
-
-        encoder2 = ForwardEncoder(input_layer=x)
-        x, skip2 = encoder2.build_layer()
-
-        asap2 = AtrousSpatialPyramidPooling(input_layer=x, n_filters=64)
-        x = asap2.build_layer()
-
-        decoder2 = ForwardDoubleConnectedDecoder(input_layer=x, connections1=skip1, connections2=skip2)
-        x = decoder2.build_layer()
-
-        output2 = OutputBlock(input_layer=x)
-        final_output = Concatenate()([output1_layer, output2.build_layer()])
+        output2 = OutputBlock()(x)
+        final_output = Concatenate()([output1, output2])
 
         model = keras_model.Model(inputs=input_image, outputs=final_output)
         self.set_model(model)
