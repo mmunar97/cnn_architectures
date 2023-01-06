@@ -49,6 +49,7 @@ class DoubleUNet(CNNModel):
         self.set_model(model)
 
     def compile(self,
+                loss_func: List[Union[str, Callable]] = ["categorical_crossentropy"],
                 metrics: List[Callable] = None,
                 learning_rate: Union[int, float] = 1e-4,
                 *args, **kwargs):
@@ -61,7 +62,7 @@ class DoubleUNet(CNNModel):
             metrics = [dice_coef, iou, Recall(), Precision()]
 
         self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                           metrics=metrics)
+                           loss=loss_func, metrics=metrics)
 
     def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
               validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
