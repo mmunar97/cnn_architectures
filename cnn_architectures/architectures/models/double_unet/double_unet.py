@@ -29,7 +29,7 @@ class DoubleUNet(CNNModel):
 
         x, skip2 = ForwardEncoder()(x)
         x = AtrousSpatialPyramidPooling(n_filters=64)(x)
-        x = ForwardDoubleConnectedDecoder(input_layer=x, connections1=skip1, connections2=skip2)(x)
+        x = ForwardDoubleConnectedDecoder(connections1=skip1, connections2=skip2)(x)
 
         output2 = OutputBlock()(x)
         final_output = Concatenate()([output1, output2])
