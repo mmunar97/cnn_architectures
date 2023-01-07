@@ -1,3 +1,4 @@
+from tensorflow.keras.applications import *
 from tensorflow.keras.metrics import *
 from tensorflow.keras.optimizers import *
 from typing import Callable, Union, Tuple
@@ -20,7 +21,8 @@ class DoubleUNet(CNNModel):
     def build(self):
         input_image = keras_layer.Input(self.input_size, name="input_image")
 
-        x, skip1 = VGGEncoder()(input_image)
+        vgg = VGG19(include_top=False, weights='imagenet', input_tensor=input_image)
+        x, skip1 = VGGEncoder(vgg_model=vgg)(input_image)
         x = AtrousSpatialPyramidPooling(n_filters=64)(x)
         x = ForwardConnectedDecoder(connections=skip1)(x)
 
