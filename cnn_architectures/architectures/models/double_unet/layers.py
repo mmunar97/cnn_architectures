@@ -13,7 +13,8 @@ class VGGEncoder(Layer):
         self.__skipped_connections = []
 
     def call(self, inputs, *args, **kwargs):
-        self.__vgg_model = VGG19(include_top=False, weights='imagenet', input_tensor=inputs)
+        x = inputs
+        self.__vgg_model = VGG19(include_top=False, weights='imagenet', input_tensor=x)
         names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
         for name in names:
             self.__skipped_connections.append(self.__vgg_model.get_layer(name).output)
@@ -273,13 +274,13 @@ class ConvolutionalBlock(Layer):
         return x
 
     def __squeeze_excite_block(self, input_layer: keras_layer.Layer, ratio: int = 8):
-        init = input_layer
+        x = input_layer
         channel_axis = -1
-        filters = init.shape[channel_axis]
+        filters = x.shape[channel_axis]
         se_shape = (1, 1, filters)
 
         self.__global_avg_pool_2d = GlobalAveragePooling2D()
-        se = self.__global_avg_pool_2d(init)
+        se = self.__global_avg_pool_2d(x)
         self.__reshape = Reshape(se_shape)
         se = self.__reshape(se)
         self.__dense1 = Dense(filters // ratio, activation='relu', kernel_initializer='he_normal', use_bias=False)
@@ -288,7 +289,7 @@ class ConvolutionalBlock(Layer):
         se = self.__dense2(se)
 
         self.__mult = Multiply()
-        x = self.__mult([init, se])
+        x = self.__mult([x, se])
         return x
 
     def get_config(self):
@@ -308,6 +309,7 @@ class OutputBlock(Layer):
         self.__activation = Activation('sigmoid')
 
     def call(self, inputs, **kwargs):
-        x = self.__conv2d(inputs)
+        x = inputs
+        x = self.__conv2d(x)
         x = self.__activation(x)
         return x
