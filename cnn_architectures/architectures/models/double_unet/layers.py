@@ -10,17 +10,16 @@ class VGGEncoder(Layer):
         super(VGGEncoder, self).__init__()
 
         self.__vgg_model = None
+        self.__skipped_connections = []
 
     def call(self, inputs, *args, **kwargs):
-        skip_connections = []
-
         self.__vgg_model = VGG19(include_top=False, weights='imagenet', input_tensor=inputs)
         names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
         for name in names:
-            skip_connections.append(self.__vgg_model.get_layer(name).output)
+            self.__skipped_connections.append(self.__vgg_model.get_layer(name).output)
 
         output = self.__vgg_model.get_layer("block5_conv4").output
-        return output, skip_connections
+        return output, self.__skipped_connections
 
 
 class AtrousSpatialPyramidPooling(Layer):
@@ -167,23 +166,23 @@ class ForwardEncoder(Layer):
 
         self.__convolutions: List[ConvolutionalBlock] = []
         self.__pools: List[MaxPool2D] = []
+        self.__skipped_connections = []
 
     def call(self, inputs, **kwargs):
         num_filters = [32, 64, 128, 256]
-        skip_connections = []
         x = inputs
 
         for i, f in enumerate(num_filters):
             conv = ConvolutionalBlock(n_filters=f)
             self.__convolutions.append(conv)
             x = conv(x)
-            skip_connections.append(x)
+            self.__skipped_connections.append(x)
 
             max_pool = MaxPool2D((2, 2))
             self.__pools.append(max_pool)
             x = max_pool(x)
 
-        return x, skip_connections
+        return x, self.__skipped_connections
 
 
 class ForwardDoubleConnectedDecoder(Layer):
