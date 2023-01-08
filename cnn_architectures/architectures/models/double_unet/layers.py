@@ -6,8 +6,8 @@ from typing import List
 
 
 class VGGEncoder(Layer):
-    def __init__(self, vgg_model: Model):
-        super(VGGEncoder, self).__init__()
+    def __init__(self, vgg_model: Model, name: str = None, **kwargs):
+        super(VGGEncoder, self).__init__(name=name, **kwargs)
 
         self.__vgg_model = vgg_model
         self.__skipped_connections = []
@@ -31,8 +31,8 @@ class VGGEncoder(Layer):
 
 class AtrousSpatialPyramidPooling(Layer):
 
-    def __init__(self, n_filters: int):
-        super(AtrousSpatialPyramidPooling, self).__init__()
+    def __init__(self, n_filters: int, name: str = None, **kwargs):
+        super(AtrousSpatialPyramidPooling, self).__init__(name=name, **kwargs)
 
         self.__n_filter = n_filters
         self.__avg_pooling_2d = None
@@ -129,8 +129,8 @@ class AtrousSpatialPyramidPooling(Layer):
 
 class ForwardConnectedDecoder(Layer):
 
-    def __init__(self, connections: List[keras_layer.Layer], filter_sizes: List[int] = None):
-        super(ForwardConnectedDecoder, self).__init__()
+    def __init__(self, connections: List[keras_layer.Layer], filter_sizes: List[int] = None, name: str = None, **kwargs):
+        super(ForwardConnectedDecoder, self).__init__(name=name, **kwargs)
 
         if filter_sizes is None:
             self.__filter_sizes = [256, 128, 64, 32]
@@ -178,8 +178,8 @@ class ForwardConnectedDecoder(Layer):
 
 class ForwardEncoder(Layer):
 
-    def __init__(self, filter_sizes: List[int] = None):
-        super(ForwardEncoder, self).__init__()
+    def __init__(self, filter_sizes: List[int] = None, name: str = None, **kwargs):
+        super(ForwardEncoder, self).__init__(name=name, **kwargs)
 
         if filter_sizes is None:
             self.__filter_sizes = [32, 64, 128, 256]
@@ -219,8 +219,9 @@ class ForwardEncoder(Layer):
 
 class ForwardDoubleConnectedDecoder(Layer):
 
-    def __init__(self, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer], filter_sizes: List[int] = None):
-        super(ForwardDoubleConnectedDecoder, self).__init__()
+    def __init__(self, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer], filter_sizes: List[int] = None,
+                 name: str = None, **kwargs):
+        super(ForwardDoubleConnectedDecoder, self).__init__(name=name, **kwargs)
 
         if filter_sizes is None:
             self.__filter_sizes = [256, 128, 64, 32]
@@ -274,8 +275,8 @@ class ForwardDoubleConnectedDecoder(Layer):
 
 class ConvolutionalBlock(Layer):
 
-    def __init__(self, n_filters: int, squeeze_ratio: int = 8):
-        super(ConvolutionalBlock, self).__init__()
+    def __init__(self, n_filters: int, squeeze_ratio: int = 8, name: str = None, **kwargs):
+        super(ConvolutionalBlock, self).__init__(name=name, **kwargs)
 
         self.__n_filter = n_filters
 
@@ -345,8 +346,8 @@ class ConvolutionalBlock(Layer):
 
 class OutputBlock(Layer):
 
-    def __init__(self):
-        super(OutputBlock, self).__init__()
+    def __init__(self, name: str = None, **kwargs):
+        super(OutputBlock, self).__init__(name=name, **kwargs)
 
         self.__conv2d = Conv2D(1, (1, 1), padding="same")
         self.__activation = Activation('sigmoid')
