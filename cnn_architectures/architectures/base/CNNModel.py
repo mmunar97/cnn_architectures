@@ -24,13 +24,15 @@ class CNNModel:
     def set_model(self, model: keras.models.Model):
         self.__internal_model = model
 
-    def predict_binary(self, image: numpy.ndarray, binary_threshold: float) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    def predict_binary(self, image: numpy.ndarray, binary_threshold: float,
+                       prediction_index: int = 0) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
         """
         Performs the prediction of the already-trained model as a binary mask.
 
         Args:
             image: An image represented as a numpy array.
             binary_threshold: A float, representing the number to be used in the binarization.
+            prediction_index: An integer, representing the position of the final output in the model prediction.
 
         Returns:
             Two numpy arrays: the first one, representing the binary mask, and the second one, representing the original image with the binary mask drawn over it.
@@ -43,7 +45,7 @@ class CNNModel:
         resized_image = cv2.resize(image, (self.__input_size[0], self.__input_size[1]))
 
         prediction = self.model.predict(numpy.array([resized_image_normalized]))
-        prediction_mask_bool = prediction[0] >= binary_threshold
+        prediction_mask_bool = prediction[prediction_index] >= binary_threshold
         prediction_mask_int = 255 * prediction_mask_bool
 
         if image.ndim == 2:

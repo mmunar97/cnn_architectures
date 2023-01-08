@@ -60,19 +60,6 @@ class DoubleUNet(CNNModel):
               *args, **kwargs):
         """
         Trains the model with the specified parameters.
-
-        Args:
-            train_generator:
-            val_generator:
-            epochs:
-            steps_per_epoch:
-            validation_steps:
-            check_point_path:
-            callbacks:
-            verbose:
-
-        Returns:
-
         """
         if self.__history is not None:
             warnings.warn("Model already trained, starting new training.")
