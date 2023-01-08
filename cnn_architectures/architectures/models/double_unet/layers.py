@@ -21,6 +21,13 @@ class VGGEncoder(Layer):
         output = self.__vgg_model.get_layer("block5_conv4").output
         return output, self.__skipped_connections
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'vgg_model': self.__vgg_model
+        })
+        return config
+
 
 class AtrousSpatialPyramidPooling(Layer):
 
@@ -163,7 +170,8 @@ class ForwardConnectedDecoder(Layer):
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'connections': self.__connections
+            'connections': self.__connections,
+            'filter_sizes': self.__filter_sizes
         })
         return config
 
@@ -200,6 +208,13 @@ class ForwardEncoder(Layer):
             x = self.__pools[index](x)
 
         return x, self.__skipped_connections
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filter_sizes': self.__filter_sizes
+        })
+        return config
 
 
 class ForwardDoubleConnectedDecoder(Layer):
@@ -251,7 +266,8 @@ class ForwardDoubleConnectedDecoder(Layer):
         config = super().get_config().copy()
         config.update({
             'connections1': self.__connections1,
-            'connections2': self.__connections2
+            'connections2': self.__connections2,
+            'filter_sizes': self.__filter_sizes
         })
         return config
 
@@ -329,7 +345,8 @@ class ConvolutionalBlock(Layer):
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'n_filters': self.__n_filter
+            'n_filters': self.__n_filter,
+            'squeeze_ratio': self.__squeeze_ratio
         })
         return config
 
