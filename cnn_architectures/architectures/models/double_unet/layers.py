@@ -324,22 +324,14 @@ class ConvolutionalBlock(Layer):
         x = self.__batch_normalization_2(x)
         x = self.__activation_2(x)
 
-        x = self.__squeeze_excite_block(x)
-
-        return x
-
-    def __squeeze_excite_block(self, input_layer: keras_layer.Layer):
-        x = input_layer
-        channel_axis = -1
-        filters = x.shape[channel_axis]
-        se_shape = (1, 1, filters)
-
+        # Squeeze-and-excite block
         se = self.__global_avg_pool_2d(x)
         se = self.__reshape(se)
         se = self.__dense1(se)
         se = self.__dense2(se)
 
         x = self.__mult([x, se])
+
         return x
 
     def get_config(self):
