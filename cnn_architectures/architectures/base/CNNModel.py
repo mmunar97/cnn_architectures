@@ -51,17 +51,12 @@ class CNNModel:
         prediction_mask_int = 255 * prediction_mask_bool
 
         if image.ndim == 2:
-            for x in range(0, prediction_mask_bool.shape[0]):
-                for y in range(0, prediction_mask_bool.shape[1]):
-                    if prediction_mask_bool[x][y]:
-                        resized_image[x, y] = 255
+            resized_image[prediction_mask_bool] = 255
+
         else:
-            for x in range(0, prediction_mask_bool.shape[0]):
-                for y in range(0, prediction_mask_bool.shape[1]):
-                    if prediction_mask_bool[x][y]:
-                        resized_image[x, y, 0] = 0
-                        resized_image[x, y, 1] = 255
-                        resized_image[x, y, 2] = 0
+            resized_image[:, :, 0][prediction_mask_bool] = 0
+            resized_image[:, :, 1][prediction_mask_bool] = 255
+            resized_image[:, :, 2][prediction_mask_bool] = 0
 
         resized_image = cv2.resize(resized_image, (image.shape[1], image.shape[0]))
 
