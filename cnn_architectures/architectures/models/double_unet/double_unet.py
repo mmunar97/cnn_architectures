@@ -35,7 +35,7 @@ class DoubleUNet(CNNModel):
         x = ForwardDoubleConnectedDecoder(connections1=skip1, connections2=skip2)(x)
 
         output2 = OutputBlock()(x)
-        final_output = Concatenate()([output1, output2])
+        final_output = Concatenate(name="final_output")([output1, output2])
 
         model = keras_model.Model(inputs=input_image, outputs=final_output)
         self.set_model(model)
