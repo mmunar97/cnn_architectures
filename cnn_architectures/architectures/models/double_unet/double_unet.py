@@ -7,9 +7,6 @@ from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.double_unet.layers import *
 from cnn_architectures.utils.metrics import *
 
-import tensorflow as tf
-tf.compat.v1.disable_eager_execution()
-
 import tensorflow.keras.models as keras_model
 import warnings
 

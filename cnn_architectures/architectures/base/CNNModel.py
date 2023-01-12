@@ -4,6 +4,8 @@ from typing import Tuple
 import cv2
 import numpy
 import skimage
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
 
 
 class CNNModel:
