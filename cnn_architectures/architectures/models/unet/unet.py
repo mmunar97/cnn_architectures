@@ -139,7 +139,7 @@ class UNet(CNNModel):
 
     @property
     def history(self):
-        return self.model
+        return self.__history
 
     def get_layer(self, *args, **kwargs):
         """
