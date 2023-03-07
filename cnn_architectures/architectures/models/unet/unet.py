@@ -1,5 +1,3 @@
-from tensorflow.python.keras.layers import Reshape
-
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.unet.layers import *
 from tensorflow.keras.optimizers import *
@@ -67,11 +65,9 @@ class UNet(CNNModel):
             x = CropConcatBlock()(x, encoder[layer_idx])
             x = ConvBlock(layer_idx, **conv_params)(x)
 
-        final_conv = keras_layer.Conv2D(self.__n_channels, (1, 1), activation=last_activation,
-                                        padding='same', dilation_rate=dilation_rate,
-                                        kernel_initializer='he_normal')(x)
-
-        mask_out = Reshape((self.input_size, self.input_size), name="img_out")(final_conv)
+        mask_out = keras_layer.Conv2D(self.__n_channels, (1, 1), activation=last_activation,
+                                      padding='same', dilation_rate=dilation_rate,
+                                      kernel_initializer='he_normal', name="img_out")(x)
 
         model = keras_model.Model(inputs=input_image, outputs=mask_out)
 
