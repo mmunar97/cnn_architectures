@@ -12,3 +12,13 @@ In addition, the U-NetUIB architecture has been implemented. It has the same imp
 The original code for the networks was implemented by the following people:
 - U-Net, by [Miquel Miró Nicolau](https://github.com/miquelmn), PhD student on the Balearic Islands University.
 - GSC and DoubleU-Net, by Antonio Nadal Martínez, mathematics undergraduate student on the Balearic Islands University.
+
+The code that appears in this package has been modified to unify the notation and structure.
+
+## Installation
+
+The package is slated to become available on the PyPI package manager shortly. In the interim, it can be installed using `pip` with the following command:
+
+```
+pip install git+https://github.com/mmunar97/cnn_architectures
+```
