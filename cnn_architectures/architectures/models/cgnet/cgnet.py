@@ -1,8 +1,8 @@
-from tensorflow import keras
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.cgnet.layers import *
 from typing import Union, Tuple
 from tensorflow.keras.layers import Input, UpSampling2D, Activation
+from tensorflow.keras.models import Model
 
 
 class CGNet(CNNModel):
@@ -33,7 +33,7 @@ class CGNet(CNNModel):
             x = Conv2D(filters=32,
                        kernel_size=(3, 3),
                        padding='same')(x)
-        ij_1 = InputInjection(downsamplingRatio=1)(inp)
+        ij_1 = InputInjection(downsamplingratio=1)(inp)
 
         x = concatenate([x_s1, ij_1, x])
 
@@ -47,7 +47,7 @@ class CGNet(CNNModel):
                         r=8,
                         n_block=i+2)(x)
 
-        ij_2 = InputInjection(downsamplingRatio=2)(inp)
+        ij_2 = InputInjection(downsamplingratio=2)(inp)
 
         x = concatenate([x_s2, ij_2, x])
 
@@ -72,13 +72,6 @@ class CGNet(CNNModel):
                          interpolation='bilinear')(x)
         mask_out = Activation(self.__last_activation, name='mask_out')(x)
 
-        model = keras.models.Model(inputs=input_image, outputs=mask_out, name='CGNet')
+        model = Model(inputs=input_image, outputs=mask_out, name='CGNet')
         self.set_model(model)
         return mask_out
-
-
-if __name__ == '__main__':
-    model = CGNet(input_size=(256, 256, 3), m=3, n=21, out_channels=2)
-    model.build()
-    model.compile()
-    model.summary()

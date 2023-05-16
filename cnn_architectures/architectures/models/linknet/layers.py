@@ -1,6 +1,7 @@
 from tensorflow.keras.layers import Layer, add, AvgPool2D
 from cnn_architectures.utils.common import ConvBlock
 
+
 class Identity(Layer):
     def __init__(self):
         super(Identity, self).__init__()

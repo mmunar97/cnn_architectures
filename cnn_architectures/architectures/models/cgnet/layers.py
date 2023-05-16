@@ -54,14 +54,12 @@ class FGlo(Layer):
         self.pool = GlobalAvgPool2D()
         self.mlp = MultiLayerPerceptron(filters=filters, reduction=reduction)
 
-
     def call(self, inputs, **kwargs):
         inp = inputs
         out = self.pool(inp)
         out = self.mlp(out)
         out = multiply([inp, out])
         return out
-
 
     def get_config(self):
         config = super().get_config().copy()
@@ -95,7 +93,7 @@ class MultiLayerPerceptron(Layer):
 
 
 class CGBlock(Layer):
-    def __init__(self, filters: int, r:int, dilation: int, n_block: int):
+    def __init__(self, filters: int, r: int, dilation: int, n_block: int):
         super(CGBlock, self).__init__()
         self.__filters = filters
         self.__dilation = dilation
@@ -116,7 +114,6 @@ class CGBlock(Layer):
 
         self.bn = BatchNormalization()
         self.prelu = PReLU()
-
 
     def call(self, inputs, **kwargs):
         mid = self.conv(inputs)
@@ -142,18 +139,16 @@ class CGBlock(Layer):
 
 
 class InputInjection(Layer):
-    def __init__(self, downsamplingRatio):
+    def __init__(self, downsamplingratio):
         super(InputInjection, self).__init__()
         self.pool = []
-        for _ in range(0, downsamplingRatio):
+        for _ in range(0, downsamplingratio):
             self.pool.append(AveragePooling2D(pool_size=(3, 3),
                                               strides=2,
                                               padding='same'))
 
     def call(self, inputs, *args, **kwargs):
         inp = inputs
-        print(inp.shape, 'in')
         for pool in self.pool:
             inp = pool(inp)
-        print(inp.shape, 'out')
         return inp

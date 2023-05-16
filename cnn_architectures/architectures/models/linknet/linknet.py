@@ -1,4 +1,4 @@
-from tensorflow import keras
+from tensorflow.keras.models import Model
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.linknet.layers import *
 from cnn_architectures.utils.common import ConvBlock
@@ -47,22 +47,14 @@ class LinkNet(CNNModel):
         x = ConvBlock(filters=32,
                       kSize=3)(x)
         mask_out = ConvBlock(filters=self.__out_channels,
-                      kSize=2,
-                      strides=2,
-                      conv_type='trans',
-                      activation_function=self.__last_activation,
-                      name='mask_out')(x)
-        # mask_out = Activation(self.__last_activation, name='mask_out')(x)
+                             kSize=2,
+                             strides=2,
+                             conv_type='trans',
+                             activation_function=self.__last_activation,
+                             name='mask_out')(x)
 
-        model = keras.models.Model(inputs=input_image, outputs=mask_out, name='LinkNet')
+        model = Model(inputs=input_image, outputs=mask_out, name='LinkNet')
 
         self.set_model(model)
 
         return mask_out
-
-
-if __name__ == '__main__':
-    model = LinkNet(input_size=(256, 256, 3), out_channels=2)
-    model.build()
-    model.compile()
-    model.summary()

@@ -1,9 +1,10 @@
 from tensorflow import keras
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.erfnet.layers import *
-from cnn_architectures.utils.common import DownSamplerBlock, UpSamplerBlock
+from cnn_architectures.utils.common import DownSamplerBlock
 from typing import Union, Tuple
 from tensorflow.keras.layers import Input, Conv2DTranspose
+from cnn_architectures.utils.common import ConvBlock as UpSamplerBlock
 
 
 class ERFNet(CNNModel):
@@ -42,16 +43,13 @@ class ERFNet(CNNModel):
                                    activation=self.__last_activation,
                                    name='mask_out')(x)
 
-        # x = UpSamplerBlock(filters=self.__out_channels)(x)
-        # mask_out = Activation(self.__last_activation, name='mask_out')(x)
+        mask_out = UpSamplerBlock(filters=self.__out_channels,
+                                  kSize=2,
+                                  strides=2,
+                                  conv_type='trans',
+                                  activation_function=self.__last_activation,
+                                  name='mask_out')(x)
 
         model = keras.models.Model(inputs=input_image, outputs=mask_out)
         self.set_model(model)
         return mask_out
-
-
-if __name__ == '__main__':
-    model = ERFNet(input_size=(256, 256, 3), out_channels=2)
-    model.build()
-    model.compile()
-    model.summary()

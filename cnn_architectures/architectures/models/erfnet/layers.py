@@ -54,5 +54,3 @@ class NBN1D(Layer):
             'filters': self.__filters,
         })
         return config
-
-

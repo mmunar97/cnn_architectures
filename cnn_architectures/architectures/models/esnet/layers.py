@@ -1,7 +1,8 @@
 from tensorflow.keras.layers import Layer, Conv2D, BatchNormalization, ReLU, add, Dropout
 
+
 class FCU(Layer):
-    def __init__(self, k:int, filters: int, dropout_rate: float = 0):
+    def __init__(self, k: int, filters: int, dropout_rate: float = 0):
         super(FCU, self).__init__()
         self.__dropout_rate = dropout_rate
         self.__k = k
@@ -58,7 +59,7 @@ class FCU(Layer):
 
 
 class DilatedConvBlock(Layer):
-    def __init__(self, filters: int, dilation: int, dropout_rate : float = 0):
+    def __init__(self, filters: int, dilation: int, dropout_rate: float = 0):
         super(DilatedConvBlock, self).__init__()
         self.__dropout_rate = dropout_rate
         self.__filters = filters
@@ -140,5 +141,3 @@ class PFCU(Layer):
             'dropout_rate': self.__dropout_rate,
         })
         return config
-
-
