@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='cnn_architectures',
-    version='1.0',
+    version='1.1',
     packages=['cnn_architectures'],
     url='https://github.com/mmunar97/cnn_architectures',
     license='mit',
