@@ -28,6 +28,8 @@ def get_dataset(image_dir, mask_dir, num_epochs, batch_size, img_size=(256, 256,
         img = tf.io.read_file(imgPath)
         img = tf.image.decode_png(img, channels=3)
         img = tf.image.resize(img, [img_size[0], img_size[1]])
+        if img_size[2] == 1:
+            img = tf.image.rgb_to_grayscale(img)
         img /= 255
         return img
 
