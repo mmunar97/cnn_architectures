@@ -67,24 +67,24 @@ class AtrousSpatialPyramidPooling(Layer):
         self.__avg_pooling_2d = AveragePooling2D(pool_size=(input_shape[1], input_shape[2]))
         self.__conv2d_1 = Conv2D(self.__n_filter, 1, padding="same")
         self.__batch_normalization_1 = BatchNormalization()
-        self.__activation_1 = Activation("relu")
+        self.__activation_1 = tf.keras.activations.relu
         self.__upsampling_2d = UpSampling2D((input_shape[1], input_shape[2]), interpolation='bilinear')
         self.__conv2d_2 = Conv2D(self.__n_filter, 1, dilation_rate=1, padding="same", use_bias=False)
         self.__batch_normalization_2 = BatchNormalization()
-        self.__activation_2 = Activation("relu")
+        self.__activation_2 = tf.keras.activations.relu
         self.__conv2d_3 = Conv2D(self.__n_filter, 3, dilation_rate=6, padding="same", use_bias=False)
         self.__batch_normalization_3 = BatchNormalization()
-        self.__activation_3 = Activation("relu")
+        self.__activation_3 = tf.keras.activations.relu
         self.__conv2d_4 = Conv2D(self.__n_filter, 3, dilation_rate=12, padding="same", use_bias=False)
         self.__batch_normalization_4 = BatchNormalization()
-        self.__activation_4 = Activation("relu")
+        self.__activation_4 = tf.keras.activations.relu
         self.__conv2d_5 = Conv2D(self.__n_filter, 3, dilation_rate=18, padding="same", use_bias=False)
         self.__batch_normalization_5 = BatchNormalization()
-        self.__activation_5 = Activation("relu")
+        self.__activation_5 = tf.keras.activations.relu
         self.__concatenate = concatenate
         self.__conv2d_6 = Conv2D(self.__n_filter, 1, dilation_rate=1, padding="same", use_bias=False)
         self.__batch_normalization_6 = BatchNormalization()
-        self.__activation_6 = Activation("relu")
+        self.__activation_6 = tf.keras.activations.relu
 
     @tf.autograph.experimental.do_not_convert
     def call(self, inputs, *args, **kwargs):
@@ -312,7 +312,7 @@ class ConvolutionalBlock(Layer):
         self.__reshape = Reshape((1, 1, output_shape[-1]))
         self.__dense1 = Dense(output_shape[-1] // self.__squeeze_ratio, activation='relu', kernel_initializer='he_normal', use_bias=False)
         self.__dense2 = Dense(output_shape[-1], activation='sigmoid', kernel_initializer='he_normal', use_bias=False)
-        self.__mult = Multiply()
+        self.__mult = multiply
 
     @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
