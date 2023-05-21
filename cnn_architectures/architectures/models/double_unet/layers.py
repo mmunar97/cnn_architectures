@@ -12,7 +12,7 @@ class VGGEncoder(Layer):
         self.__vgg_model = vgg_model
         self.__skipped_connections = []
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, *args, **kwargs):
         names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
         for name in names:
@@ -86,7 +86,7 @@ class AtrousSpatialPyramidPooling(Layer):
         self.__batch_normalization_6 = BatchNormalization()
         self.__activation_6 = tf.keras.activations.relu
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, *args, **kwargs):
         x = inputs
 
@@ -153,7 +153,7 @@ class ForwardConnectedDecoder(Layer):
             conv = ConvolutionalBlock(n_filters=filter_size)
             self.__convolutions.append(conv)
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
 
         skip_connections = self.__connections.copy()
@@ -198,7 +198,7 @@ class ForwardEncoder(Layer):
             max_pool = MaxPool2D((2, 2))
             self.__pools.append(max_pool)
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
         x = inputs
 
@@ -246,7 +246,7 @@ class ForwardDoubleConnectedDecoder(Layer):
             conv_block = ConvolutionalBlock(n_filters=filter_size)
             self.__convolutions.append(conv_block)
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
         skip_connections1 = self.__connections1.copy()
         skip_connections1.reverse()
@@ -314,7 +314,7 @@ class ConvolutionalBlock(Layer):
         self.__dense2 = Dense(output_shape[-1], activation='sigmoid', kernel_initializer='he_normal', use_bias=False)
         self.__mult = multiply
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
         x = inputs
 
@@ -352,7 +352,7 @@ class OutputBlock(Layer):
         self.__conv2d = Conv2D(1, (1, 1), padding="same")
         self.__activation = Activation('sigmoid')
 
-    @tf.autograph.experimental.do_not_convert
+    # @tf.autograph.experimental.do_not_convert
     def call(self, inputs, **kwargs):
         x = inputs
         x = self.__conv2d(x)
