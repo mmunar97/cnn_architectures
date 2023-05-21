@@ -8,7 +8,7 @@ from typing import Tuple, List
 class GSC(CNNModel):
 
     def __init__(self,
-                 input_size: Tuple[int, int] = (256, 256),
+                 input_size: Tuple[int, int, int] = (256, 256, 1),
                  filters: List[int] = None):
         """
         Initializes the model which represents the GSC architecture.
@@ -22,7 +22,7 @@ class GSC(CNNModel):
             filters: A list of integers, representing the sizes of the consecutive filters to be applied. The first element of the list must be one,
                      since it is used for the final output.
         """
-        super().__init__(input_size + (1,))
+        super().__init__(input_size)
 
         if filters is None:
             filters = [1, 32, 64, 128, 256, 512, 1024]
