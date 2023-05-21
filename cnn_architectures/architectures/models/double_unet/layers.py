@@ -81,7 +81,7 @@ class AtrousSpatialPyramidPooling(Layer):
         self.__conv2d_5 = Conv2D(self.__n_filter, 3, dilation_rate=18, padding="same", use_bias=False)
         self.__batch_normalization_5 = BatchNormalization()
         self.__activation_5 = Activation("relu")
-        self.__concatenate = Concatenate()
+        self.__concatenate = concatenate
         self.__conv2d_6 = Conv2D(self.__n_filter, 1, dilation_rate=1, padding="same", use_bias=False)
         self.__batch_normalization_6 = BatchNormalization()
         self.__activation_6 = Activation("relu")
@@ -139,7 +139,7 @@ class ForwardConnectedDecoder(Layer):
 
         self.__connections = connections
         self.__upsamplings: List[UpSampling2D] = []
-        self.__concatenations: List[Concatenate] = []
+        self.__concatenations: List[concatenate] = []
         self.__convolutions: List[ConvolutionalBlock] = []
 
     def build(self, input_shape):
@@ -147,7 +147,7 @@ class ForwardConnectedDecoder(Layer):
             upsampling2d = UpSampling2D((2, 2), interpolation='bilinear')
             self.__upsamplings.append(upsampling2d)
 
-            concat = Concatenate()
+            concat = concatenate
             self.__concatenations.append(concat)
 
             conv = ConvolutionalBlock(n_filters=filter_size)
@@ -232,7 +232,7 @@ class ForwardDoubleConnectedDecoder(Layer):
         self.__connections2 = connections2
 
         self.__upsamplings: List[UpSampling2D] = []
-        self.__concatenations: List[Concatenate] = []
+        self.__concatenations: List[concatenate] = []
         self.__convolutions: List[ConvolutionalBlock] = []
 
     def build(self, input_shape):
@@ -240,7 +240,7 @@ class ForwardDoubleConnectedDecoder(Layer):
             upsampling = UpSampling2D((2, 2), interpolation='bilinear')
             self.__upsamplings.append(upsampling)
 
-            concatenation = Concatenate()
+            concatenation = concatenate
             self.__concatenations.append(concatenation)
 
             conv_block = ConvolutionalBlock(n_filters=filter_size)
