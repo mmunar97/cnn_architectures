@@ -1,10 +1,8 @@
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.unet.layers import *
-from tensorflow.keras.optimizers import *
-from typing import Callable, Union, List
+from typing import Callable, Union
 
 import tensorflow.keras.models as keras_model
-import warnings
 
 
 class UNet(CNNModel):
@@ -74,78 +72,3 @@ class UNet(CNNModel):
         self.set_model(model)
 
         return input_image, encoder, mask_out
-
-    def compile(self,
-                loss_func: Union[str, Callable] = "categorical_crossentropy",
-                metrics: List[Union[str, Callable]] = ["accuracy"],
-                learning_rate: Union[int, float] = 3e-5, *args, **kwargs):
-        """
-        Compiles the model.
-
-        Args:
-            loss_func: An string or callable method, which represent the loss function to be used in the training.
-            metrics: A list of strings or callable methods, which represent the metrics to measure the training performance.
-            learning_rate: An integer or a float number, representing the learning rate of the training.
-        """
-        loss_functions = {"img_out": loss_func}
-
-        self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                           loss=loss_functions, metrics=metrics)
-
-    def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
-              validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
-              *args, **kwargs):
-        """
-        Trains the model with the info passed as parameters.
-
-        Args:
-            train_generator: A generator, representing the feeder for the training process.
-            val_generator: A generator, representing the feeder for the validation process while training.
-            epochs: An integer, representing the number of epochs to use.
-            steps_per_epoch: An integer, representing the number of steps to perform in each epoch.
-            validation_steps: An integer, representing the number of steps in the validation.
-            check_point_path: A string, representing the path where the checkpoints will be saved. Can be None.
-            callbacks: A list of callable methods, representing the callbacks during the training.
-            verbose: An integer, representing if the log has to be shown.
-        """
-        if self.__history is not None:
-            warnings.warn("Model already trained, starting new training")
-
-        if callbacks is None:
-            callbacks = []
-
-        if check_point_path is not None:
-            callbacks.append(tf.keras.callbacks.ModelCheckpoint(check_point_path, verbose=0,
-                                                                save_weights_only=False,
-                                                                save_best_only=True))
-
-        if val_generator is not None:
-            history = self.model.fit(train_generator, validation_data=val_generator,
-                                     epochs=epochs,
-                                     validation_steps=validation_steps,
-                                     callbacks=callbacks,
-                                     steps_per_epoch=steps_per_epoch,
-                                     verbose=verbose, *args, **kwargs)
-        else:
-            history = self.model.fit(train_generator, epochs=epochs,
-                                     callbacks=callbacks, verbose=verbose,
-                                     steps_per_epoch=steps_per_epoch, *args,
-                                     **kwargs)
-
-        self.__history = history
-
-    def load_weight(self, path: str):
-        self.model.load_weights(path)
-
-    @property
-    def history(self):
-        return self.__history
-
-    def get_layer(self, *args, **kwargs):
-        """
-        Wrapper of the Keras get_layer function.
-        """
-        return self.model.get_layer(*args, **kwargs)
-
-    def summary(self):
-        self.model.summary()

@@ -1,14 +1,10 @@
 from tensorflow.keras.applications import *
-from tensorflow.keras.metrics import *
-from tensorflow.keras.optimizers import *
-from typing import Callable, Union, Tuple
+from typing import Tuple
 
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.double_unet.layers import *
-from cnn_architectures.utils.metrics import *
 
 import tensorflow.keras.models as keras_model
-import warnings
 
 
 class DoubleUNet(CNNModel):
@@ -41,58 +37,3 @@ class DoubleUNet(CNNModel):
         self.set_model(model)
 
         return input_image, final_output
-
-    def compile(self,
-                loss_func: List[Union[str, Callable]] = ["categorical_crossentropy"],
-                metrics: List[Callable] = None,
-                learning_rate: Union[int, float] = 1e-4,
-                *args, **kwargs):
-        """
-        Compiles the model.
-        """
-
-        # Setting standard metrics for segmentation purposes
-        if metrics is None:
-            metrics = [dice_coef, iou, Recall(), Precision()]
-
-        self.model.compile(*args, **kwargs, optimizer=Adam(learning_rate=learning_rate),
-                           loss=loss_func, metrics=metrics)
-
-    def train(self, train_generator, val_generator, epochs: int, steps_per_epoch: int,
-              validation_steps: int, check_point_path: Union[str, None], callbacks=None, verbose=1,
-              *args, **kwargs):
-        """
-        Trains the model with the specified parameters.
-        """
-        if self.__history is not None:
-            warnings.warn("Model already trained, starting new training.")
-
-        if callbacks is None:
-            callbacks = []
-
-        if check_point_path is not None:
-            callbacks.append(tf.keras.callbacks.ModelCheckpoint(check_point_path, verbose=0,
-                                                                save_weights_only=False,
-                                                                save_best_only=True))
-
-        if val_generator is not None:
-            history = self.model.fit(train_generator, validation_data=val_generator,
-                                     epochs=epochs,
-                                     validation_steps=validation_steps,
-                                     callbacks=callbacks,
-                                     steps_per_epoch=steps_per_epoch,
-                                     verbose=verbose, *args, **kwargs)
-        else:
-            history = self.model.fit(train_generator, epochs=epochs,
-                                     callbacks=callbacks, verbose=verbose,
-                                     steps_per_epoch=steps_per_epoch, *args,
-                                     **kwargs)
-
-        self.__history = history
-
-    def load_weight(self, path: str):
-        self.model.load_weights(path)
-
-    @property
-    def history(self):
-        return self.__history
