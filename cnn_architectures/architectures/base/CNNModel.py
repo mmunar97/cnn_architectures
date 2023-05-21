@@ -44,11 +44,11 @@ class CNNModel:
               train_generator,
               epochs: int,
               steps_per_epoch: int,
-              checkpoint_path: Union[str, None],
+              checkpoint_path: Union[str, None] = None,
               checkpoint_freq: Union[int, str] = 'epoch',
               # save_all: bool=False,
               callbacks=None,
-              verbose: int = 2,
+              verbose: int = 1,
               val_generator=None,
               val_steps: int = 0,
               *args, **kwargs,
@@ -101,6 +101,9 @@ class CNNModel:
         self.model.compiled_loss = None
         self.model.compiled_metrics = None
         self.model.save(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        return self.model.predict(*args, **kwargs)
 
     def predict_binary(self, image: numpy.ndarray, binary_threshold: float,
                        prediction_index: int = 0) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
