@@ -33,11 +33,11 @@ class ESNet(CNNModel):
         for _ in range(3):
             x = PFCU(filters=128, dropout_rate=0.3)(x)
 
-        x = UpSamplerBlock(filters=64, kSize=3)(x)
+        x = UpSamplerBlock(filters=64, kSize=3, strides=2, conv_type='trans')(x)
         for _ in range(2):
             x = FCU(k=5, filters=64, dropout_rate=0.3)(x)
 
-        x = UpSamplerBlock(filters=16, kSize=3)(x)
+        x = UpSamplerBlock(filters=16, kSize=3, strides=2, conv_type='trans')(x)
         for _ in range(2):
             x = FCU(k=3, filters=16, dropout_rate=0.3)(x)
 

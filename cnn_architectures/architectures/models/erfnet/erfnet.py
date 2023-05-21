@@ -31,17 +31,9 @@ class ERFNet(CNNModel):
             x = NBN1D(filters=128, dilation=d)(x)
 
         for f in [64, 16]:
-            x = UpSamplerBlock(filters=f)(x)
+            x = UpSamplerBlock(filters=f, kSize=3, strides=2, conv_type='trans')(x)
             for _ in range(2):
                 x = NBN1D(filters=f)(x)
-
-        mask_out = Conv2DTranspose(filters=self.__out_channels,
-                                   kernel_size=(2, 2),
-                                   strides=2,
-                                   padding='same',
-                                   use_bias=True,
-                                   activation=self.__last_activation,
-                                   name='mask_out')(x)
 
         mask_out = UpSamplerBlock(filters=self.__out_channels,
                                   kSize=2,
