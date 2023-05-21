@@ -36,8 +36,8 @@ class UNetPre(CNNModel):
             x = EncoderBlock(bb)(x)
             encoders.append(x)
 
-        x = SpecialDownSampling(x)
-        x = SpecialEncoderBlock(self.__filters[5])
+        x = SpecialDownSampling()(x)
+        x = SpecialEncoderBlock(self.__filters[5])(x)
 
         for filter in self.__filters[6:10]:
             x = UpSampling(filter)(x)
@@ -55,7 +55,7 @@ class UNetPre(CNNModel):
                           kernel_size=(1, 1),
                           activation='sigmoid',
                           padding='same',
-                          name='mask_out')
+                          name='mask_out')(x)
 
         model = Model(inputs=input_image, outputs=mask_out, name='UnetPre')
         self.set_model(model)
