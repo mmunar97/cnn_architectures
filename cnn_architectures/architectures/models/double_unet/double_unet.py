@@ -3,6 +3,7 @@ from typing import Tuple
 
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from cnn_architectures.architectures.models.double_unet.layers import *
+from cnn_architectures.utils.common import Identity
 
 import tensorflow.keras.models as keras_model
 
@@ -31,9 +32,10 @@ class DoubleUNet(CNNModel):
         x = ForwardDoubleConnectedDecoder(connections1=skip1, connections2=skip2)(x)
 
         output2 = OutputBlock()(x)
-        final_output = Concatenate(name="mask_out")([output1, output2])
+        final_output = concatenate([output1, output2])
+        mask_out = Identity(name='mask_out')(final_output)
 
-        model = keras_model.Model(inputs=input_image, outputs=final_output)
+        model = keras_model.Model(inputs=input_image, outputs=mask_out)
         self.set_model(model)
 
         return input_image, final_output

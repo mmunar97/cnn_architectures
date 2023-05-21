@@ -1,14 +1,8 @@
 from tensorflow.keras.layers import Layer, add, AvgPool2D
-from cnn_architectures.utils.common import ConvBlock
+from cnn_architectures.utils.common import ConvBlock, Identity
 
 
-class Identity(Layer):
-    def __init__(self):
-        super(Identity, self).__init__()
 
-    def call(self, inputs, **kwargs):
-        inp = inputs
-        return inp
 
 
 class EncoderSubBlock(Layer):

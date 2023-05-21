@@ -1,5 +1,15 @@
 from tensorflow.keras.layers import Layer, Conv2D, MaxPooling2D, BatchNormalization, concatenate, ReLU, Conv2DTranspose, Activation
 
+# LinkNet / DoubleUNet
+class Identity(Layer):
+    def __init__(self, **kwargs):
+        super(Identity, self).__init__(**kwargs)
+
+    def call(self, inputs, **kwargs):
+        inp = inputs
+        return inp
+
+
 # ESNet/ERFNet
 class DownSamplerBlock(Layer):
     def __init__(self, nIn: int, nOut: int):
@@ -75,7 +85,7 @@ class UpSamplerBlock(Layer):
         return config
 
 
-# LinkNet / GSC
+# LinkNet / GSC / ESNet / ERFNet
 class ConvBlock(Layer):
     def __init__(self,
                  filters: int,
