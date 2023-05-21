@@ -32,7 +32,7 @@ class UNetPre(CNNModel):
         encoders = []
 
         for idx, bb in enumerate(self.__backbone):
-            x = DownSampling(self.__filters[idx+1])
+            x = DownSampling(self.__filters[idx+1])(x)
             x = EncoderBlock(bb)(x)
             encoders.append(x)
 
