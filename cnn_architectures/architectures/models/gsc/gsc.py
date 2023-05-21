@@ -52,7 +52,7 @@ class GSC(CNNModel):
             decoder = DecoderBlock(number_filters=filter_size)
             x = decoder([x, y_history[index]])
 
-        mask_out = Conv2D(filters=self.__filters[0], kernel_size=(1, 1), activation='sigmoid')(x)
+        mask_out = Conv2D(filters=self.__filters[0], kernel_size=(1, 1), activation='sigmoid', name='mask_out')(x)
 
         model = Model(inputs=input_image, outputs=mask_out, name='GSC')
         self.set_model(model)
