@@ -8,7 +8,7 @@ class EncoderBlock(Layer):
         self.__bb = bb
 
     def call(self, inputs, *args, **kwargs):
-        x = self.bb(inputs)
+        x = self.__bb(inputs)
         return x
 
     def get_config(self):
