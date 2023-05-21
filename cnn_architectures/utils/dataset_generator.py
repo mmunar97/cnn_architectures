@@ -2,10 +2,7 @@ import tensorflow as tf
 import os
 import warnings
 
-def get_dataset(data_dir, num_epochs, batch_size, img_size=(256, 256, 3), mask_size=(256, 256, 2), shuffle: bool = True):
-    # Directorios de imágenes
-    image_dir = f'{data_dir}/org/'
-    mask_dir = f'{data_dir}/mask/'
+def get_dataset(image_dir, mask_dir, num_epochs, batch_size, img_size=(256, 256, 3), mask_size=(256, 256, 2), shuffle: bool = True):
 
     # Listar los archivos en cada directorio
     images = os.listdir(image_dir)
@@ -23,7 +20,7 @@ def get_dataset(data_dir, num_epochs, batch_size, img_size=(256, 256, 3), mask_s
             images_list.append(os.path.join(image_dir, image))
             masks_list.append(os.path.join(mask_dir, mask))
         else:
-            warnings.warn(f'Los nombres no coinciden: {image} - {mask}')
+            warnings.warn(f'Names do not match: {image} - {mask}')
 
 
     def load_and_preprocess_image(imgPath):
