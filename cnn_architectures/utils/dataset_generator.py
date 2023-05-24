@@ -1,8 +1,16 @@
 import tensorflow as tf
 import os
 import warnings
+from typing import Tuple
 
-def get_dataset(image_dir, mask_dir, num_epochs, batch_size, img_size=(256, 256, 3), mask_size=(256, 256, 2), shuffle: bool = True):
+def get_dataset(image_dir: str,
+                mask_dir: str,
+                num_epochs: int,
+                batch_size: int,
+                img_size: Tuple[int, int, int] = (256, 256, 3),
+                mask_size: Tuple[int, int, int] = (256, 256, 2),
+                shuffle: bool = True):
+
 
     # Listar los archivos en cada directorio
     images = os.listdir(image_dir)
@@ -40,9 +48,12 @@ def get_dataset(image_dir, mask_dir, num_epochs, batch_size, img_size=(256, 256,
         mask = tf.image.resize(mask, [mask_size[0], mask_size[1]])
         if mask_size[2] == 1:
             mask = tf.expand_dims(mask, axis=-1)
-        else:
+        elif mask_size[2] == 2:
             mask_aux = 255 - mask
             mask = tf.concat([mask, mask_aux], axis=-1)
+        elif mask_size[2] == 28:
+            # DoubleUNet output type
+            mask = tf.concat([mask, mask], axis=-1)
         mask /= 255
         return mask
 
