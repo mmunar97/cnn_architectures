@@ -1,360 +1,254 @@
-import tensorflow as tf
-import tensorflow.keras.layers as keras_layer
+from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Reshape, Dense, UpSampling2D, concatenate, MaxPooling2D, Conv2D, BatchNormalization, AveragePooling2D, multiply
+from cnn_architectures.utils.common import ConvBlock
+from tensorflow.keras.activations import relu
+from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import *
-from typing import List
+import tensorflow as tf
 
 
-class VGGEncoder(Layer):
-    def __init__(self, vgg_model: Model, name: str = None, **kwargs):
-        super(VGGEncoder, self).__init__(name=name, **kwargs)
+class Squeeze_excite_block(Layer):
+    def __init__(self, filters: int, ratio: int = 8):
+        super(Squeeze_excite_block, self).__init__()
+        self.__filters = filters
+        self.__ratio = ratio
 
-        self.__vgg_model = vgg_model
-        self.__skipped_connections = []
+        self.gap = GlobalAveragePooling2D()
+        self.reshape = Reshape((1, 1, filters))
+        self.dense1 = Dense(units=filters//ratio,
+                            activation='relu',
+                            kernel_initializer='he_normal',
+                            use_bias=False)
+        self.dense2 = Dense(units=filters,
+                            activation='sigmoid',
+                            kernel_initializer='he_normal',
+                            use_bias=False)
 
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, *args, **kwargs):
-        names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
-        for name in names:
-            self.__skipped_connections.append(self.__vgg_model.get_layer(name).output)
-
-        output = self.__vgg_model.get_layer("block5_conv4").output
-        return output, self.__skipped_connections
+    def call(self, inputs, **kwargs):
+        init = inputs
+        x = self.gap(init)
+        x = self.reshape(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        out = multiply([init, x])
+        return out
 
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'vgg_model': self.__vgg_model
+            'filters': self.__filters,
+            'ratio': self.__ratio,
         })
         return config
 
 
-class AtrousSpatialPyramidPooling(Layer):
+class Decoder1(Layer):
+    def __init__(self, model):
+        super(Decoder1, self).__init__()
+        self.filters = [256, 128, 64, 32]
+        self.up = UpSampling2D(size=(2, 2), interpolation='bilinear')
+        self.conv_blocks = []
+        for i, f in enumerate(self.filters):
+            self.conv_blocks.append([
+                ConvBlock(filters=f,
+                          kSize=3),
+                ConvBlock(filters=f,
+                          kSize=3),
+                Squeeze_excite_block(filters=f)
+            ])
 
-    def __init__(self, n_filters: int, name: str = None, **kwargs):
-        super(AtrousSpatialPyramidPooling, self).__init__(name=name, **kwargs)
+        self.model = model
+        self.skip_connections = []
+        self.submodels = []
 
-        self.__n_filter = n_filters
-        self.__avg_pooling_2d = None
-        self.__conv2d_1 = None
-        self.__batch_normalization_1 = None
-        self.__activation_1 = None
-        self.__upsampling_2d = None
+        for name in names:
+            submodel = Model(inputs=self.model.input, outputs=self.model.get_layer(name).output)
+            self.submodels.append(submodel)
 
-        self.__conv2d_2 = None
-        self.__batch_normalization_2 = None
-        self.__activation_2 = None
+    def call(self, inputs, **kwargs):
+        x, input_image = inputs
 
-        self.__conv2d_3 = None
-        self.__batch_normalization_3 = None
-        self.__activation_3 = None
+        for i in range(len(self.conv_blocks)):
+            x = self.up(x)
+            skip = self.submodels[len(self.submodels) - (i+1)]
+            x = concatenate([x, skip(input_image)])
+            for element in self.conv_blocks[i]:
+                x = element(x)
 
-        self.__conv2d_4 = None
-        self.__batch_normalization_4 = None
-        self.__activation_4 = None
+        return x
 
-        self.__conv2d_5 = None
-        self.__batch_normalization_5 = None
-        self.__activation_5 = None
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'model': self.model
+        })
+        return config
 
-        self.__concatenate = None
 
-        self.__conv2d_6 = None
-        self.__batch_normalization_6 = None
-        self.__activation_6 = None
+class Decoder2(Layer):
+    def __init__(self, model):
+        super(Decoder2, self).__init__()
+        self.filters = [256, 128, 64, 32]
 
-    def build(self, input_shape):
-        self.__avg_pooling_2d = AveragePooling2D(pool_size=(input_shape[1], input_shape[2]))
-        self.__conv2d_1 = Conv2D(self.__n_filter, 1, padding="same")
-        self.__batch_normalization_1 = BatchNormalization()
-        self.__activation_1 = tf.keras.activations.relu
-        self.__upsampling_2d = UpSampling2D((input_shape[1], input_shape[2]), interpolation='bilinear')
-        self.__conv2d_2 = Conv2D(self.__n_filter, 1, dilation_rate=1, padding="same", use_bias=False)
-        self.__batch_normalization_2 = BatchNormalization()
-        self.__activation_2 = tf.keras.activations.relu
-        self.__conv2d_3 = Conv2D(self.__n_filter, 3, dilation_rate=6, padding="same", use_bias=False)
-        self.__batch_normalization_3 = BatchNormalization()
-        self.__activation_3 = tf.keras.activations.relu
-        self.__conv2d_4 = Conv2D(self.__n_filter, 3, dilation_rate=12, padding="same", use_bias=False)
-        self.__batch_normalization_4 = BatchNormalization()
-        self.__activation_4 = tf.keras.activations.relu
-        self.__conv2d_5 = Conv2D(self.__n_filter, 3, dilation_rate=18, padding="same", use_bias=False)
-        self.__batch_normalization_5 = BatchNormalization()
-        self.__activation_5 = tf.keras.activations.relu
-        self.__concatenate = concatenate
-        self.__conv2d_6 = Conv2D(self.__n_filter, 1, dilation_rate=1, padding="same", use_bias=False)
-        self.__batch_normalization_6 = BatchNormalization()
-        self.__activation_6 = tf.keras.activations.relu
+        self.up = UpSampling2D(size=(2, 2), interpolation='bilinear')
+        self.conv_blocks = []
+        for i, f in enumerate(self.filters):
+            self.conv_blocks.append([
+                ConvBlock(filters=f,
+                          kSize=3),
+                ConvBlock(filters=f,
+                          kSize=3),
+                Squeeze_excite_block(filters=f)
+            ])
 
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, *args, **kwargs):
-        x = inputs
+        self.model = model
+        self.skip_connections = []
+        self.submodels = []
+        names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
+        for name in names:
+            submodel = Model(inputs=self.model.input, outputs=self.model.get_layer(name).output)
+            self.submodels.append(submodel)
 
-        y1 = self.__avg_pooling_2d(x)
-        y1 = self.__conv2d_1(y1)
-        y1 = self.__batch_normalization_1(y1)
-        y1 = self.__activation_1(y1)
-        y1 = self.__upsampling_2d(y1)
+    def call(self, inputs, **kwargs):
+        x, input_image, skip2 = inputs
+        # skip2.reverse()
 
-        y2 = self.__conv2d_2(x)
-        y2 = self.__batch_normalization_2(y2)
-        y2 = self.__activation_2(y2)
+        for i in range(len(self.conv_blocks)):
+            x = self.up(x)
+            skip1 = self.submodels[len(self.submodels) - (i+1)]
 
-        y3 = self.__conv2d_3(x)
-        y3 = self.__batch_normalization_3(y3)
-        y3 = self.__activation_3(y3)
+            x = concatenate([x, skip1(input_image), skip2[len(self.conv_blocks) - (i+1)]])
+            for element in self.conv_blocks[i]:
+                x = element(x)
 
-        y4 = self.__conv2d_4(x)
-        y4 = self.__batch_normalization_4(y4)
-        y4 = self.__activation_4(y4)
+        return x
 
-        y5 = self.__conv2d_5(x)
-        y5 = self.__batch_normalization_5(y5)
-        y5 = self.__activation_5(y5)
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'model': self.model
+        })
+        return config
 
-        y = self.__concatenate([y1, y2, y3, y4, y5])
-        y = self.__conv2d_6(y)
-        y = self.__batch_normalization_6(y)
-        y = self.__activation_6(y)
+
+class SubEncoder(Layer):
+    def __init__(self, filters):
+        super(SubEncoder, self).__init__()
+        self.__filters = filters
+
+        self.conv_block1 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.conv_block2 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.squeeze = Squeeze_excite_block(filters=filters)
+
+    def call(self, inputs, **kwargs):
+        x = self.conv_block1(inputs)
+        x = self.conv_block2(x)
+        x = self.squeeze(x)
+        return x
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filters': self.__filters
+        })
+        return config
+
+
+class OutputBlock(Layer):
+    def __init__(self):
+        super(OutputBlock, self).__init__()
+        self.conv = Conv2D(filters=1,
+                           kernel_size=(1, 1),
+                           padding='same',
+                           activation='sigmoid')
+
+    def call(self, inputs, **kwargs):
+        x = self.conv(inputs)
+        return x
+
+
+class ASPP(Layer):
+    def __init__(self, filters, input_shape):
+        super(ASPP, self).__init__()
+        self.__filters = filters
+        self.__input_shape = input_shape
+
+        self.avgpool = AveragePooling2D(pool_size=(input_shape[1], input_shape[2]))
+        self.up = UpSampling2D(size=(input_shape[1], input_shape[2]), interpolation='bilinear')
+        self.conv1 = Conv2D(filters=filters,
+                            kernel_size=(1, 1),
+                            padding='same')
+        self.bn1 = BatchNormalization()
+
+        self.conv2 = Conv2D(filters=filters,
+                            kernel_size=(1, 1),
+                            dilation_rate=1,
+                            padding='same',
+                            use_bias=False)
+        self.bn2 = BatchNormalization()
+
+        self.conv3 = Conv2D(filters=filters,
+                            kernel_size=(3, 3),
+                            dilation_rate=6,
+                            padding='same',
+                            use_bias=False)
+        self.bn3 = BatchNormalization()
+
+        self.conv4 = Conv2D(filters=filters,
+                            kernel_size=(3, 3),
+                            dilation_rate=12,
+                            padding='same',
+                            use_bias=False)
+        self.bn4 = BatchNormalization()
+
+        self.conv5 = Conv2D(filters=filters,
+                            kernel_size=(3, 3),
+                            dilation_rate=18,
+                            padding='same',
+                            use_bias=False)
+        self.bn5 = BatchNormalization()
+
+        self.conv = Conv2D(filters=filters,
+                           kernel_size=(1, 1),
+                           padding='same',
+                           use_bias=False)
+        self.bn = BatchNormalization()
+
+    def call(self, inputs, **kwargs):
+        y1 = self.avgpool(inputs)
+        y1 = self.conv1(y1)
+        y1 = self.bn1(y1)
+        y1 = relu(y1)
+        y1 = self.up(y1)
+
+        y2 = self.conv2(inputs)
+        y2 = self.bn2(y2)
+        y2 = relu(y2)
+
+        y3 = self.conv3(inputs)
+        y3 = self.bn3(y3)
+        y3 = relu(y3)
+
+        y4 = self.conv4(inputs)
+        y4 = self.bn4(y4)
+        y4 = relu(y4)
+
+        y5 = self.conv5(inputs)
+        y5 = self.bn5(y5)
+        y5 = relu(y5)
+        y = concatenate([y1, y2, y3, y4, y5])
+
+        y = self.conv(y)
+        y = self.bn(y)
+        y = relu(y)
 
         return y
 
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'n_filters': self.__n_filter
+            'filters': self.__filters,
+            'input_shape': self.__input_shape,
         })
         return config
-
-
-class ForwardConnectedDecoder(Layer):
-
-    def __init__(self, connections: List[keras_layer.Layer], filter_sizes: List[int] = None, name: str = None, **kwargs):
-        super(ForwardConnectedDecoder, self).__init__(name=name, **kwargs)
-
-        if filter_sizes is None:
-            self.__filter_sizes = [256, 128, 64, 32]
-        else:
-            self.__filter_sizes = filter_sizes
-
-        self.__connections = connections
-        self.__upsamplings: List[UpSampling2D] = []
-        self.__concatenations: List[concatenate] = []
-        self.__convolutions: List[ConvolutionalBlock] = []
-
-    def build(self, input_shape):
-        for index, filter_size in enumerate(self.__filter_sizes):
-            upsampling2d = UpSampling2D((2, 2), interpolation='bilinear')
-            self.__upsamplings.append(upsampling2d)
-
-            concat = concatenate
-            self.__concatenations.append(concat)
-
-            conv = ConvolutionalBlock(n_filters=filter_size)
-            self.__convolutions.append(conv)
-
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, **kwargs):
-
-        skip_connections = self.__connections.copy()
-        skip_connections.reverse()
-        x = inputs
-
-        for index, filter_size in enumerate(self.__filter_sizes):
-            x = self.__upsamplings[index](x)
-            x = self.__concatenations[index]([x, skip_connections[index]])
-            x = self.__convolutions[index](x)
-
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'connections': self.__connections,
-            'filter_sizes': self.__filter_sizes
-        })
-        return config
-
-
-class ForwardEncoder(Layer):
-
-    def __init__(self, filter_sizes: List[int] = None, name: str = None, **kwargs):
-        super(ForwardEncoder, self).__init__(name=name, **kwargs)
-
-        if filter_sizes is None:
-            self.__filter_sizes = [32, 64, 128, 256]
-        else:
-            self.__filter_sizes = filter_sizes
-
-        self.__convolutions: List[ConvolutionalBlock] = []
-        self.__pools: List[MaxPool2D] = []
-        self.__skipped_connections = []
-
-    def build(self, input_shape):
-        for index, filter_size in enumerate(self.__filter_sizes):
-            conv = ConvolutionalBlock(n_filters=filter_size)
-            self.__convolutions.append(conv)
-
-            max_pool = MaxPool2D((2, 2))
-            self.__pools.append(max_pool)
-
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, **kwargs):
-        x = inputs
-
-        for index, filter_size in enumerate(self.__filter_sizes):
-            x = self.__convolutions[index](x)
-            self.__skipped_connections.append(x)
-            x = self.__pools[index](x)
-
-        return x, self.__skipped_connections
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'filter_sizes': self.__filter_sizes
-        })
-        return config
-
-
-class ForwardDoubleConnectedDecoder(Layer):
-
-    def __init__(self, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer], filter_sizes: List[int] = None,
-                 name: str = None, **kwargs):
-        super(ForwardDoubleConnectedDecoder, self).__init__(name=name, **kwargs)
-
-        if filter_sizes is None:
-            self.__filter_sizes = [256, 128, 64, 32]
-        else:
-            self.__filter_sizes = filter_sizes
-
-        self.__connections1 = connections1
-        self.__connections2 = connections2
-
-        self.__upsamplings: List[UpSampling2D] = []
-        self.__concatenations: List[concatenate] = []
-        self.__convolutions: List[ConvolutionalBlock] = []
-
-    def build(self, input_shape):
-        for index, filter_size in enumerate(self.__filter_sizes):
-            upsampling = UpSampling2D((2, 2), interpolation='bilinear')
-            self.__upsamplings.append(upsampling)
-
-            concatenation = concatenate
-            self.__concatenations.append(concatenation)
-
-            conv_block = ConvolutionalBlock(n_filters=filter_size)
-            self.__convolutions.append(conv_block)
-
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, **kwargs):
-        skip_connections1 = self.__connections1.copy()
-        skip_connections1.reverse()
-
-        skip_connections2 = self.__connections2.copy()
-        skip_connections2.reverse()
-
-        x = inputs
-
-        for index, filter_size in enumerate(self.__filter_sizes):
-            x = self.__upsamplings[index](x)
-            x = self.__concatenations[index]([x, skip_connections1[index], skip_connections2[index]])
-            x = self.__convolutions[index](x)
-
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'connections1': self.__connections1,
-            'connections2': self.__connections2,
-            'filter_sizes': self.__filter_sizes
-        })
-        return config
-
-
-class ConvolutionalBlock(Layer):
-
-    def __init__(self, n_filters: int, squeeze_ratio: int = 8, name: str = None, **kwargs):
-        super(ConvolutionalBlock, self).__init__(name=name, **kwargs)
-
-        self.__n_filter = n_filters
-
-        self.__conv2d_1 = None
-        self.__batch_normalization_1 = None
-        self.__activation_1 = None
-        self.__conv2d_2 = None
-        self.__batch_normalization_2 = None
-        self.__activation_2 = None
-        self.__global_avg_pool_2d = None
-        self.__reshape = None
-        self.__dense1 = None
-        self.__dense2 = None
-        self.__mult = None
-        self.__squeeze_ratio = squeeze_ratio
-
-    def build(self, input_shape):
-        self.__conv2d_1 = Conv2D(self.__n_filter, (3, 3), padding="same")
-        self.__batch_normalization_1 = BatchNormalization()
-        self.__activation_1 = Activation('relu')
-        self.__conv2d_2 = Conv2D(self.__n_filter, (3, 3), padding="same")
-        self.__batch_normalization_2 = BatchNormalization()
-        self.__activation_2 = Activation('relu')
-        self.__global_avg_pool_2d = GlobalAveragePooling2D()
-
-        previous_layers = [self.__conv2d_1, self.__batch_normalization_1, self.__activation_1,
-                           self.__conv2d_2, self.__batch_normalization_2, self.__activation_2]
-
-        output_shape = input_shape
-        for layer in previous_layers:
-            output_shape = layer.compute_output_shape(output_shape)
-
-        self.__reshape = Reshape((1, 1, output_shape[-1]))
-        self.__dense1 = Dense(output_shape[-1] // self.__squeeze_ratio, activation='relu', kernel_initializer='he_normal', use_bias=False)
-        self.__dense2 = Dense(output_shape[-1], activation='sigmoid', kernel_initializer='he_normal', use_bias=False)
-        self.__mult = multiply
-
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, **kwargs):
-        x = inputs
-
-        x = self.__conv2d_1(x)
-        x = self.__batch_normalization_1(x)
-        x = self.__activation_1(x)
-        x = self.__conv2d_2(x)
-        x = self.__batch_normalization_2(x)
-        x = self.__activation_2(x)
-
-        # Squeeze-and-excite block
-        se = self.__global_avg_pool_2d(x)
-        se = self.__reshape(se)
-        se = self.__dense1(se)
-        se = self.__dense2(se)
-
-        x = self.__mult([x, se])
-
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'n_filters': self.__n_filter,
-            'squeeze_ratio': self.__squeeze_ratio
-        })
-        return config
-
-
-class OutputBlock(Layer):
-
-    def __init__(self, name: str = None, **kwargs):
-        super(OutputBlock, self).__init__(name=name, **kwargs)
-
-        self.__conv2d = Conv2D(1, (1, 1), padding="same")
-        self.__activation = Activation('sigmoid')
-
-    # @tf.autograph.experimental.do_not_convert
-    def call(self, inputs, **kwargs):
-        x = inputs
-        x = self.__conv2d(x)
-        x = self.__activation(x)
-        return x
