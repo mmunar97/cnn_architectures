@@ -1,9 +1,6 @@
-from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Reshape, Dense, UpSampling2D, concatenate, MaxPooling2D, Conv2D, BatchNormalization, AveragePooling2D, multiply
+from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Reshape, Dense, UpSampling2D, concatenate, Conv2D, BatchNormalization, AveragePooling2D, multiply
 from cnn_architectures.utils.common import ConvBlock
 from tensorflow.keras.activations import relu
-from tensorflow.keras import backend as K
-from tensorflow.keras.models import Model
-import tensorflow as tf
 
 
 class Squeeze_excite_block(Layer):
@@ -37,95 +34,6 @@ class Squeeze_excite_block(Layer):
         config.update({
             'filters': self.__filters,
             'ratio': self.__ratio,
-        })
-        return config
-
-
-class Decoder1(Layer):
-    def __init__(self, model):
-        super(Decoder1, self).__init__()
-        self.filters = [256, 128, 64, 32]
-        self.up = UpSampling2D(size=(2, 2), interpolation='bilinear')
-        self.conv_blocks = []
-        for i, f in enumerate(self.filters):
-            self.conv_blocks.append([
-                ConvBlock(filters=f,
-                          kSize=3),
-                ConvBlock(filters=f,
-                          kSize=3),
-                Squeeze_excite_block(filters=f)
-            ])
-
-        self.model = model
-        self.skip_connections = []
-        self.submodels = []
-
-        for name in names:
-            submodel = Model(inputs=self.model.input, outputs=self.model.get_layer(name).output)
-            self.submodels.append(submodel)
-
-    def call(self, inputs, **kwargs):
-        x, input_image = inputs
-
-        for i in range(len(self.conv_blocks)):
-            x = self.up(x)
-            skip = self.submodels[len(self.submodels) - (i+1)]
-            x = concatenate([x, skip(input_image)])
-            for element in self.conv_blocks[i]:
-                x = element(x)
-
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'model': self.model
-        })
-        return config
-
-
-class Decoder2(Layer):
-    def __init__(self, model):
-        super(Decoder2, self).__init__()
-        self.filters = [256, 128, 64, 32]
-
-        self.up = UpSampling2D(size=(2, 2), interpolation='bilinear')
-        self.conv_blocks = []
-        for i, f in enumerate(self.filters):
-            self.conv_blocks.append([
-                ConvBlock(filters=f,
-                          kSize=3),
-                ConvBlock(filters=f,
-                          kSize=3),
-                Squeeze_excite_block(filters=f)
-            ])
-
-        self.model = model
-        self.skip_connections = []
-        self.submodels = []
-        names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
-        for name in names:
-            submodel = Model(inputs=self.model.input, outputs=self.model.get_layer(name).output)
-            self.submodels.append(submodel)
-
-    def call(self, inputs, **kwargs):
-        x, input_image, skip2 = inputs
-        # skip2.reverse()
-
-        for i in range(len(self.conv_blocks)):
-            x = self.up(x)
-            skip1 = self.submodels[len(self.submodels) - (i+1)]
-
-            x = concatenate([x, skip1(input_image), skip2[len(self.conv_blocks) - (i+1)]])
-            for element in self.conv_blocks[i]:
-                x = element(x)
-
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'model': self.model
         })
         return config
 

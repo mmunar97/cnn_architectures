@@ -1,10 +1,10 @@
 from cnn_architectures.architectures.models.double_unet.layers import *
 from cnn_architectures.architectures.base.CNNModel import CNNModel
 from typing import Union, Tuple
-from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Input, MaxPooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.vgg19 import VGG19
-from cnn_architectures.utils.common import ConvBlock
+
 
 class DoubleUNet(CNNModel):
     def __init__(self,
@@ -31,7 +31,6 @@ class DoubleUNet(CNNModel):
         self.conv_blocks3 = []
         for f in self.filters:
             self.conv_blocks3.append(SubEncoder(filters=f))
-
 
     def build(self):
         input_image = Input(self.input_size, name='input_image')
@@ -79,13 +78,3 @@ class DoubleUNet(CNNModel):
         self.set_model(model)
 
         return mask_out
-
-from cnn_architectures.utils.metrics import dice_coef, dice_loss
-
-if __name__ == '__main__':
-    model = DoubleUNet(input_size=(256, 256, 3))
-    model.build()
-    model.compile(learning_rate=0.0001,
-                  loss_func=dice_loss,
-                  metrics=[dice_coef])
-    model.summary()
