@@ -9,7 +9,7 @@ Compilation of some convolutional neural network architectures for binary object
 - CGNet, formulated in *CGNet: A Light-weight Context Guided Network for Semantic Segmentation*, by T. Wu, S. Tang, R. Zhang, J. Cao and Y. Zhang, in IEEE Transactions on Image Processing, vol. 30, pp. 1169-1179, 2021.
 - LinkNet, formulated in *LinkNet: Exploiting Encoder Representations for
 Efficient Semantic Segmentation*, by A. Chaurasia and E. Culurciello, in IEEE Visual Communications and Image Processing (VCIP), 2017.
-- Pretrained UNet (UNetPre), formulated in *Automatic Lung Segmentation in Chest X-ray Images Using Improved U-Net*, by Liu, Wufeng & Luo, Jiaxin & Yang, Yan & Wang, Wenlian & Deng, Junkui & Yu, Liang, 2022
+- Pretrained UNet (UNetPre), formulated in *Automatic Lung Segmentation in Chest X-ray Images Using Improved U-Net*, by Liu, Wufeng & Luo, Jiaxin & Yang, Yan & Wang, Wenlian & Deng, Junkui & Yu, Liang, 2022.
 
 In addition, the U-NetUIB architecture has been implemented. It has the same implementation as U-Net, but with the particularity that it allows a binary classification of the image from the segmentation. The main motivation of this implementation is the classification of post-surgical wound images according to the presence or absence of infection in the wound, based on wound segmentation.
 
