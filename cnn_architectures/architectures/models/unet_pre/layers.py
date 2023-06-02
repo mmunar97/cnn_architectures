@@ -5,16 +5,16 @@ from tensorflow.keras.layers import Layer, MaxPooling2D, Conv2D, LeakyReLU, Drop
 class EncoderBlock(Layer):
     def __init__(self, bb):
         super(EncoderBlock, self).__init__()
-        self.__bb = bb
+        self.bb = bb
 
     def call(self, inputs, *args, **kwargs):
-        x = self.__bb(inputs)
+        x = self.bb(inputs)
         return x
 
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'backbone': self.__bb,
+            'backbone': self.bb,
         })
         return config
 
