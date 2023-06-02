@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Input, MaxPooling2D, add
 class LinkNet(CNNModel):
     def __init__(self,
                  input_size: Union[Tuple[int, int, int], Tuple[int, int]],
-                 out_channels: int,
+                 out_channels: int = 2,
                  last_activation: str = 'softmax'):
 
         super(LinkNet, self).__init__(input_size=input_size)

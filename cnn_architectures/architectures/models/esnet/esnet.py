@@ -10,7 +10,7 @@ from tensorflow.keras.layers import Input
 class ESNet(CNNModel):
     def __init__(self,
                  input_size: Union[Tuple[int, int, int], Tuple[int, int]],
-                 out_channels: int,
+                 out_channels: int = 2,
                  last_activation: str = 'softmax'):
         super(ESNet, self).__init__(input_size=input_size)
         self.__last_activation = last_activation

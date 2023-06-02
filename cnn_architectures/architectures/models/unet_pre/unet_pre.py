@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Input
 class UNetPre(CNNModel):
     def __init__(self,
                  input_size,
-                 out_channels: int):
+                 out_channels: int = 2):
         super(UNetPre, self).__init__(input_size=input_size)
 
         self.__out_channels = out_channels
