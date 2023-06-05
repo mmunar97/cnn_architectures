@@ -1,106 +1,7 @@
-from tensorflow.keras.layers import Layer, GlobalAveragePooling2D, Reshape, Dense, UpSampling2D, concatenate, Conv2D, BatchNormalization, AveragePooling2D, multiply
-from cnn_architectures.utils.common import ConvBlock
+from tensorflow.keras.layers import Layer, AveragePooling2D, UpSampling2D, Conv2D, BatchNormalization, concatenate, multiply, Dense, Reshape, GlobalAveragePooling2D, MaxPooling2D
 from tensorflow.keras.activations import relu
+from cnn_architectures.utils.common import ConvBlock
 
-
-class Apply_pretrained_model(Layer):
-    def __init__(self, model, objective_layer_name):
-        super(Apply_pretrained_model, self).__init__()
-        self.__model = model
-        self.__objective_layer_name = objective_layer_name
-        self.layers = []
-        for layer in self.__model.layers:
-            if layer.name != objective_layer_name:
-                self.layers.append(layer)
-            else:
-                self.layers.append(layer)
-                break
-
-    def call(self, inputs, **kwargs):
-        x = inputs
-        for layer in self.layers:
-            x = layer(x)
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'model': self.__model,
-            'objective layer name': self.__objective_layer_name
-        })
-        return config
-
-class Squeeze_excite_block(Layer):
-    def __init__(self, filters: int, ratio: int = 8):
-        super(Squeeze_excite_block, self).__init__()
-        self.__filters = filters
-        self.__ratio = ratio
-
-        self.gap = GlobalAveragePooling2D()
-        self.reshape = Reshape((1, 1, filters))
-        self.dense1 = Dense(units=filters//ratio,
-                            activation='relu',
-                            kernel_initializer='he_normal',
-                            use_bias=False)
-        self.dense2 = Dense(units=filters,
-                            activation='sigmoid',
-                            kernel_initializer='he_normal',
-                            use_bias=False)
-
-    def call(self, inputs, **kwargs):
-        init = inputs
-        x = self.gap(init)
-        x = self.reshape(x)
-        x = self.dense1(x)
-        x = self.dense2(x)
-        out = multiply([init, x])
-        return out
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'filters': self.__filters,
-            'ratio': self.__ratio,
-        })
-        return config
-
-
-class SubEncoder(Layer):
-    def __init__(self, filters):
-        super(SubEncoder, self).__init__()
-        self.__filters = filters
-
-        self.conv_block1 = ConvBlock(filters=filters,
-                                     kSize=3)
-        self.conv_block2 = ConvBlock(filters=filters,
-                                     kSize=3)
-        self.squeeze = Squeeze_excite_block(filters=filters)
-
-    def call(self, inputs, **kwargs):
-        x = self.conv_block1(inputs)
-        x = self.conv_block2(x)
-        x = self.squeeze(x)
-        return x
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'filters': self.__filters
-        })
-        return config
-
-
-class OutputBlock(Layer):
-    def __init__(self):
-        super(OutputBlock, self).__init__()
-        self.conv = Conv2D(filters=1,
-                           kernel_size=(1, 1),
-                           padding='same',
-                           activation='sigmoid')
-
-    def call(self, inputs, **kwargs):
-        x = self.conv(inputs)
-        return x
 
 
 class ASPP(Layer):
@@ -187,3 +88,87 @@ class ASPP(Layer):
             'input_shape': self.__input_shape,
         })
         return config
+
+
+class SubEncoder(Layer):
+    def __init__(self, filters):
+        super(SubEncoder, self).__init__()
+        self.__filters = filters
+
+        self.conv_block1 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.conv_block2 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.squeeze = Squeeze_excite_block(filters=filters)
+
+    def call(self, inputs, **kwargs):
+        x = self.conv_block1(inputs)
+        x = self.conv_block2(x)
+        x = self.squeeze(x)
+        return x
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filters': self.__filters
+        })
+        return config
+
+
+class Squeeze_excite_block(Layer):
+    def __init__(self, filters: int, ratio: int = 8):
+        super(Squeeze_excite_block, self).__init__()
+        self.__filters = filters
+        self.__ratio = ratio
+
+        self.gap = GlobalAveragePooling2D()
+        self.reshape = Reshape((1, 1, filters))
+        self.dense1 = Dense(units=filters//ratio,
+                            activation='relu',
+                            kernel_initializer='he_normal',
+                            use_bias=False)
+        self.dense2 = Dense(units=filters,
+                            activation='sigmoid',
+                            kernel_initializer='he_normal',
+                            use_bias=False)
+
+    def call(self, inputs, **kwargs):
+        init = inputs
+        x = self.gap(init)
+        x = self.reshape(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        out = multiply([init, x])
+        return out
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filters': self.__filters,
+            'ratio': self.__ratio,
+        })
+        return config
+
+class OutputBlock(Layer):
+    def __init__(self):
+        super(OutputBlock, self).__init__()
+        self.conv = Conv2D(filters=1,
+                           kernel_size=(1, 1),
+                           padding='same',
+                           activation='sigmoid')
+
+    def call(self, inputs, **kwargs):
+        x = self.conv(inputs)
+        return x
+
+class Encoder(Layer):
+    def __init__(self, filters: int):
+        super(Encoder, self).__init__()
+        self.__filters = filters
+        self.conv_block = SubEncoder(filters=filters)
+        self.mp = MaxPooling2D(pool_size=(2, 2))
+
+    def call(self, inputs, **kwargs):
+        x = self.conv_block(inputs)
+        out = self.mp(x)
+        return out, x
