@@ -9,7 +9,8 @@ def get_dataset(image_dir: str,
                 batch_size: int,
                 img_size: Tuple[int, int, int] = (256, 256, 3),
                 mask_size: Tuple[int, int, int] = (256, 256, 2),
-                shuffle: bool = True):
+                shuffle: bool = True,
+                repeat: bool = True):
 
 
     # Listar los archivos en cada directorio
@@ -64,6 +65,9 @@ def get_dataset(image_dir: str,
     dataset = tf.data.Dataset.zip((image_dataset, mask_dataset))
     if shuffle:
         dataset = dataset.shuffle(buffer_size=250)
-    dataset = dataset.batch(batch_size=batch_size).repeat(num_epochs).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    dataset = dataset.batch(batch_size=batch_size)
+    if repeat:
+        dataset = dataset.repeat(num_epochs)
+    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     return dataset
