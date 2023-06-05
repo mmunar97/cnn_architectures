@@ -3,6 +3,33 @@ from cnn_architectures.utils.common import ConvBlock
 from tensorflow.keras.activations import relu
 
 
+class Apply_pretrained_model(Layer):
+    def __init__(self, model, objective_layer_name):
+        super(Apply_pretrained_model, self).__init__()
+        self.__model = model
+        self.__objective_layer_name = objective_layer_name
+        self.layers = []
+        for layer in self.__model.layers:
+            if layer.name != objective_layer_name:
+                self.layers.append(layer)
+            else:
+                self.layers.append(layer)
+                break
+
+    def call(self, inputs, **kwargs):
+        x = inputs
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'model': self.__model,
+            'objective layer name': self.__objective_layer_name
+        })
+        return config
+
 class Squeeze_excite_block(Layer):
     def __init__(self, filters: int, ratio: int = 8):
         super(Squeeze_excite_block, self).__init__()

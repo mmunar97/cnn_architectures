@@ -4,6 +4,8 @@ from typing import Union, Tuple
 from tensorflow.keras.layers import Input, MaxPooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.vgg19 import VGG19
+from cnn_architectures.utils.metrics import dice_coef, dice_loss
+
 
 
 class DoubleUNet(CNNModel):
@@ -34,17 +36,20 @@ class DoubleUNet(CNNModel):
 
     def build(self):
         input_image = Input(self.input_size, name='input_image')
-        self.vgg19 = VGG19(include_top=False, weights='imagenet', input_tensor=input_image)
+        self.vgg19 = VGG19(include_top=False, weights='imagenet', input_shape=self.input_size)
+
         # Encoder 1
-        x = self.vgg19.get_layer('block5_conv4').output
+        x = Apply_pretrained_model(model=self.vgg19, objective_layer_name='block5_conv4')(input_image)
 
         x = ASPP(64, input_shape=x.shape)(x)
 
         # Decoder 1
+        ## Get skip connections
         names = ["block1_conv2", "block2_conv2", "block3_conv4", "block4_conv4"]
         skip1 = []
         for name in names:
-            skip1.append(self.vgg19.get_layer(name).output)
+            y = Apply_pretrained_model(model=self.vgg19, objective_layer_name=name)(input_image)
+            skip1.append(y)
 
         for i in range(len(self.conv_blocks1)):
             x = self.up(x)
