@@ -1,12 +1,15 @@
-from tensorflow.keras.layers import Layer, AveragePooling2D, UpSampling2D, Conv2D, BatchNormalization, concatenate, multiply, Dense, Reshape, GlobalAveragePooling2D, MaxPooling2D
-from tensorflow.keras.activations import relu
+import tensorflow as tf
+import tensorflow.keras.layers as keras_layer
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Layer, AveragePooling2D, UpSampling2D, Conv2D, BatchNormalization, concatenate, Reshape, Dense, multiply, GlobalAveragePooling2D, MaxPool2D
+from tensorflow.keras.activations import relu, sigmoid
+from typing import List, Tuple
 from cnn_architectures.utils.common import ConvBlock
 
 
-
 class ASPP(Layer):
-    def __init__(self, filters, input_shape):
-        super(ASPP, self).__init__()
+    def __init__(self, filters, input_shape, name: str = None):
+        super(ASPP, self).__init__(name=name)
         self.__filters = filters
         self.__input_shape = input_shape
 
@@ -90,27 +93,135 @@ class ASPP(Layer):
         return config
 
 
-class SubEncoder(Layer):
-    def __init__(self, filters):
-        super(SubEncoder, self).__init__()
-        self.__filters = filters
+class ForwardConnectedDecoder(Layer):
 
-        self.conv_block1 = ConvBlock(filters=filters,
-                                     kSize=3)
-        self.conv_block2 = ConvBlock(filters=filters,
-                                     kSize=3)
-        self.squeeze = Squeeze_excite_block(filters=filters)
+    def __init__(self, input_size, connections: List[keras_layer.Layer], filter_sizes: Tuple[int] = (256, 128, 64, 32), name: str = None, **kwargs):
+        super(ForwardConnectedDecoder, self).__init__(name=name, **kwargs)
+        self.__input_size = input_size
+
+        self.filter_sizes = filter_sizes
+
+        self.connections = connections
+        self.upsamplings: List[UpSampling2D] = []
+        self.concatenations: List[concatenate] = []
+        self.convolutions: List[ConvolutionalBlock] = []
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            upsampling2d = UpSampling2D((2, 2), interpolation='bilinear')
+            self.upsamplings.append(upsampling2d)
+
+            concat = concatenate
+            self.concatenations.append(concat)
+
+            conv = ConvolutionalBlock(filters=filter_size)
+            self.convolutions.append(conv)
 
     def call(self, inputs, **kwargs):
-        x = self.conv_block1(inputs)
-        x = self.conv_block2(x)
-        x = self.squeeze(x)
+
+        skip_connections = self.connections.copy()
+        skip_connections.reverse()
+        x = inputs
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            x = self.upsamplings[index](x)
+            x = self.concatenations[index]([x, skip_connections[index]])
+            x = self.convolutions[index](x)
+
         return x
 
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'filters': self.__filters
+            'connections': self.connections,
+            'filter_sizes': self.filter_sizes,
+            'input_size': self.__input_size
+        })
+        return config
+
+
+class ForwardEncoder(Layer):
+
+    def __init__(self, filter_sizes: Tuple[int] = (32, 64, 128, 256), name: str = None, **kwargs):
+        super(ForwardEncoder, self).__init__(name=name, **kwargs)
+
+        self.filter_sizes = filter_sizes
+
+        self.convolutions: List[ConvolutionalBlock] = []
+        self.pools: List[MaxPool2D] = []
+        self.skipped_connections = []
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            conv = ConvolutionalBlock(filters=filter_size)
+            self.convolutions.append(conv)
+
+            max_pool = MaxPool2D((2, 2))
+            self.pools.append(max_pool)
+
+    def call(self, inputs, **kwargs):
+        x = inputs
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            x = self.convolutions[index](x)
+            self.skipped_connections.append(x)
+            x = self.pools[index](x)
+
+        return x, self.skipped_connections
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filter_sizes': self.filter_sizes
+        })
+        return config
+
+
+class ForwardDoubleConnectedDecoder(Layer):
+
+    def __init__(self, connections1: List[keras_layer.Layer], connections2: List[keras_layer.Layer], filter_sizes: Tuple[int] = (256, 128, 64, 32),
+                 name: str = None, **kwargs):
+        super(ForwardDoubleConnectedDecoder, self).__init__(name=name, **kwargs)
+
+        self.filter_sizes = filter_sizes
+
+        self.connections1 = connections1
+        self.connections2 = connections2
+
+        self.upsamplings: List[UpSampling2D] = []
+        self.concatenations: List[concatenate] = []
+        self.convolutions: List[ConvolutionalBlock] = []
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            upsampling = UpSampling2D((2, 2), interpolation='bilinear')
+            self.upsamplings.append(upsampling)
+
+            concatenation = concatenate
+            self.concatenations.append(concatenation)
+
+            conv_block = ConvolutionalBlock(filters=filter_size)
+            self.convolutions.append(conv_block)
+
+    def call(self, inputs, **kwargs):
+        skip_connections1 = self.connections1.copy()
+        skip_connections1.reverse()
+
+        skip_connections2 = self.connections2.copy()
+        skip_connections2.reverse()
+
+        x = inputs
+
+        for index, filter_size in enumerate(self.filter_sizes):
+            x = self.upsamplings[index](x)
+            x = self.concatenations[index]([x, skip_connections1[index], skip_connections2[index]])
+            x = self.convolutions[index](x)
+
+        return x
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'connections1': self.__connections1,
+            'connections2': self.__connections2,
+            'filter_sizes': self.__filter_sizes
         })
         return config
 
@@ -149,26 +260,42 @@ class Squeeze_excite_block(Layer):
         })
         return config
 
-class OutputBlock(Layer):
-    def __init__(self):
-        super(OutputBlock, self).__init__()
-        self.conv = Conv2D(filters=1,
-                           kernel_size=(1, 1),
-                           padding='same',
-                           activation='sigmoid')
+
+class ConvolutionalBlock(Layer):
+    def __init__(self, filters):
+        super(ConvolutionalBlock, self).__init__()
+        self.__filters = filters
+
+        self.conv_block1 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.conv_block2 = ConvBlock(filters=filters,
+                                     kSize=3)
+        self.squeeze = Squeeze_excite_block(filters=filters)
 
     def call(self, inputs, **kwargs):
-        x = self.conv(inputs)
+        x = self.conv_block1(inputs)
+        x = self.conv_block2(x)
+        x = self.squeeze(x)
         return x
 
-class Encoder(Layer):
-    def __init__(self, filters: int):
-        super(Encoder, self).__init__()
-        self.__filters = filters
-        self.conv_block = SubEncoder(filters=filters)
-        self.mp = MaxPooling2D(pool_size=(2, 2))
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filters': self.__filters
+        })
+        return config
+
+
+class OutputBlock(Layer):
+
+    def __init__(self, name: str = None, **kwargs):
+        super(OutputBlock, self).__init__(name=name, **kwargs)
+
+        self.conv2d = Conv2D(1, (1, 1), padding="same")
+        self.activation = sigmoid
 
     def call(self, inputs, **kwargs):
-        x = self.conv_block(inputs)
-        out = self.mp(x)
-        return out, x
+        x = inputs
+        x = self.conv2d(x)
+        x = self.activation(x)
+        return x
